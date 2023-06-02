@@ -395,8 +395,9 @@ class UIFunc(QMainWindow, Ui_UIView):
         def set_state(self, state):
             self.button_dict['Pick'].setChecked(state[0])
             self.button_dict['Use'].setChecked(state[1])
+            flag_dash = self.button_dict['Dash'].isChecked()
             self.button_dict['Dash'].setChecked(state[2])
-            if self.button_dict['Dash'].isChecked():
+            if not flag_dash and self.button_dict['Dash'].isChecked():
                 self.button_dict['Dash'].setText("{:05d}".format(len(self.parent.record)))
             self.button_dict['Emote'].setChecked(state[3])
             self.button_dict['X'].setValue(state[4])
