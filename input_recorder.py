@@ -25,8 +25,8 @@ class UIFunc(QMainWindow, Ui_UIView):
         self.setupUi(self)
         self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
         self.label.setStyleSheet('background-color: rgb(135,206,235)')
-        self.label_2.setStyleSheet('background-color: rgb(255,99,71)')
-        self.label_3.setStyleSheet('background-color: rgb(0,201,87)')
+        self.label_3.setStyleSheet('background-color: rgb(255,99,71)')
+        self.label_2.setStyleSheet('background-color: rgb(0,201,87)')
         self.label_4.setStyleSheet('background-color: rgb(255,215,0)')
 
         self.label_12.setStyleSheet('background-color: lightgray')
