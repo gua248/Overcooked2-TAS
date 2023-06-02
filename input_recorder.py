@@ -108,7 +108,8 @@ class UIFunc(QMainWindow, Ui_UIView):
     def key_release(self, key):
         if self.state != 'playing':
             return
-        if key in [KeyCode.from_char('w'), KeyCode.from_char('a'), KeyCode.from_char('s'), KeyCode.from_char('d'),
+        if key in [KeyCode.from_char('q'),
+                   KeyCode.from_char('w'), KeyCode.from_char('a'), KeyCode.from_char('s'), KeyCode.from_char('d'),
                    Key.space, KeyCode.from_char('.'), KeyCode.from_char('/'), KeyCode.from_char('c'), Key.enter]:
             self.active_gamepad.release_playing(key)
 
@@ -133,7 +134,8 @@ class UIFunc(QMainWindow, Ui_UIView):
             self.active_gamepad = self.gamepad_list[3]
         elif key == KeyCode.from_char('r') and self.state in ['playing', 'input_recording']:
             self.reset()
-        elif key in [KeyCode.from_char('w'), KeyCode.from_char('a'), KeyCode.from_char('s'), KeyCode.from_char('d'),
+        elif key in [KeyCode.from_char('q'),
+                     KeyCode.from_char('w'), KeyCode.from_char('a'), KeyCode.from_char('s'), KeyCode.from_char('d'),
                      Key.space, KeyCode.from_char('.'), KeyCode.from_char('/'), KeyCode.from_char('c'), Key.enter,
                      Key.alt_l] and self.state in ['playing', 'input_recording']:
             if self.state == 'input_recording':
@@ -302,6 +304,8 @@ class UIFunc(QMainWindow, Ui_UIView):
             self.gamepad = vg.VX360Gamepad()
             self.button_dict = button_dict
             self.wasd_state = [False] * 4
+            self.q_coord = [(-1.0, -0.15)]
+            self.q_state = [False]
             self.parent = parent
 
         def press_recording(self, key):
@@ -325,6 +329,9 @@ class UIFunc(QMainWindow, Ui_UIView):
                 self.button_dict['Y'].setValue(self.button_dict['Y'].value() + 1.0)
             if key == KeyCode.from_char('s'):
                 self.button_dict['Y'].setValue(self.button_dict['Y'].value() - 1.0)
+            if key == KeyCode.from_char('q'):
+                self.button_dict['X'].setValue(self.q_coord[0])
+                self.button_dict['Y'].setValue(self.q_coord[1])
             self.update()
 
         def press_playing(self, key):
@@ -344,8 +351,14 @@ class UIFunc(QMainWindow, Ui_UIView):
                 self.wasd_state[0] = True
             if key == KeyCode.from_char('s'):
                 self.wasd_state[2] = True
-            self.button_dict['X'].setValue(self.wasd_state[1] * -1.0 + self.wasd_state[3] * 1.0)
-            self.button_dict['Y'].setValue(self.wasd_state[2] * -1.0 + self.wasd_state[0] * 1.0)
+            if key == KeyCode.from_char('q'):
+                self.q_state[0] = True
+            if self.q_state[0]:
+                self.button_dict['X'].setValue(self.q_coord[0])
+                self.button_dict['Y'].setValue(self.q_coord[1])
+            else:
+                self.button_dict['X'].setValue(self.wasd_state[1] * -1.0 + self.wasd_state[3] * 1.0)
+                self.button_dict['Y'].setValue(self.wasd_state[2] * -1.0 + self.wasd_state[0] * 1.0)
             self.update()
 
         def release_playing(self, key):
@@ -365,8 +378,14 @@ class UIFunc(QMainWindow, Ui_UIView):
                 self.wasd_state[0] = False
             if key == KeyCode.from_char('s'):
                 self.wasd_state[2] = False
-            self.button_dict['X'].setValue(self.wasd_state[1] * -1.0 + self.wasd_state[3] * 1.0)
-            self.button_dict['Y'].setValue(self.wasd_state[2] * -1.0 + self.wasd_state[0] * 1.0)
+            if key == KeyCode.from_char('q'):
+                self.q_state[0] = False
+            if self.q_state[0]:
+                self.button_dict['X'].setValue(self.q_coord[0])
+                self.button_dict['Y'].setValue(self.q_coord[1])
+            else:
+                self.button_dict['X'].setValue(self.wasd_state[1] * -1.0 + self.wasd_state[3] * 1.0)
+                self.button_dict['Y'].setValue(self.wasd_state[2] * -1.0 + self.wasd_state[0] * 1.0)
             self.update()
 
         def update(self):
@@ -432,6 +451,7 @@ class UIFunc(QMainWindow, Ui_UIView):
             widget.setValue(0.0)
         for gamepad in self.gamepad_list:
             gamepad.wasd_state = [False] * 4
+            gamepad.q_state = [False]
             gamepad.update()
 
 
