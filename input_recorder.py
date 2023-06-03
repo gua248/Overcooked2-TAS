@@ -330,8 +330,8 @@ class UIFunc(QMainWindow, Ui_UIView):
             if key == KeyCode.from_char('s'):
                 self.button_dict['Y'].setValue(self.button_dict['Y'].value() - 1.0)
             if key == KeyCode.from_char('q'):
-                self.button_dict['X'].setValue(self.q_coord[0])
-                self.button_dict['Y'].setValue(self.q_coord[1])
+                self.button_dict['X'].setValue(self.q_coord[0][0])
+                self.button_dict['Y'].setValue(self.q_coord[0][1])
             self.update()
 
         def press_playing(self, key):
@@ -354,8 +354,8 @@ class UIFunc(QMainWindow, Ui_UIView):
             if key == KeyCode.from_char('q'):
                 self.q_state[0] = True
             if self.q_state[0]:
-                self.button_dict['X'].setValue(self.q_coord[0])
-                self.button_dict['Y'].setValue(self.q_coord[1])
+                self.button_dict['X'].setValue(self.q_coord[0][0])
+                self.button_dict['Y'].setValue(self.q_coord[0][1])
             else:
                 self.button_dict['X'].setValue(self.wasd_state[1] * -1.0 + self.wasd_state[3] * 1.0)
                 self.button_dict['Y'].setValue(self.wasd_state[2] * -1.0 + self.wasd_state[0] * 1.0)
@@ -381,8 +381,8 @@ class UIFunc(QMainWindow, Ui_UIView):
             if key == KeyCode.from_char('q'):
                 self.q_state[0] = False
             if self.q_state[0]:
-                self.button_dict['X'].setValue(self.q_coord[0])
-                self.button_dict['Y'].setValue(self.q_coord[1])
+                self.button_dict['X'].setValue(self.q_coord[0][0])
+                self.button_dict['Y'].setValue(self.q_coord[0][1])
             else:
                 self.button_dict['X'].setValue(self.wasd_state[1] * -1.0 + self.wasd_state[3] * 1.0)
                 self.button_dict['Y'].setValue(self.wasd_state[2] * -1.0 + self.wasd_state[0] * 1.0)
