@@ -80,9 +80,10 @@ class UIFunc(QMainWindow, Ui_UIView):
         self.active_gamepad = self.gamepad_list[0]
         self.label_12.setStyleSheet('background-color: gray')
         self.record = []
-        self.state = 'playing'
+        self.state = 'playing'  # in ['playing', 'input_recording', 'replaying']
         self.label_5.setText('PLAY')
 
+        self.ignore_key = False
         self.key_press_signal.connect(self.key_press)
         self.key_release_signal.connect(self.key_release)
 
@@ -106,7 +107,7 @@ class UIFunc(QMainWindow, Ui_UIView):
 
     @Slot(Key)
     def key_release(self, key):
-        if self.state != 'playing':
+        if self.state != 'playing' or self.ignore_key:
             return
         if key in [KeyCode.from_char('q'),
                    KeyCode.from_char('w'), KeyCode.from_char('a'), KeyCode.from_char('s'), KeyCode.from_char('d'),
@@ -115,23 +116,38 @@ class UIFunc(QMainWindow, Ui_UIView):
 
     @Slot(Key)
     def key_press(self, key):
-        if key in [KeyCode.from_char('1'), KeyCode.from_char('2'), KeyCode.from_char('3'), KeyCode.from_char('4')]:
+        if key == KeyCode.from_char('0'):
+            self.ignore_key = not self.ignore_key
+            if self.ignore_key:
+                self.label_5.setText('PAUSE')
+            else:
+                if self.state == 'playing':
+                    self.label_5.setText('PLAY')
+                elif self.state == 'replaying':
+                    self.label_5.setText('REPLAY')
+                else:
+                    self.label_5.clear()
+            return
+        if self.ignore_key:
+            return
+        if key in [KeyCode.from_char('1'), KeyCode.from_char('2'), KeyCode.from_char('3'), KeyCode.from_char('4')] \
+                and self.state in ['playing', 'input_recording']:
             self.label_12.setStyleSheet('background-color: lightgray')
             self.label_13.setStyleSheet('background-color: lightgray')
             self.label_14.setStyleSheet('background-color: lightgray')
             self.label_15.setStyleSheet('background-color: lightgray')
-        if key == KeyCode.from_char('1'):
-            self.label_12.setStyleSheet('background-color: gray')
-            self.active_gamepad = self.gamepad_list[0]
-        elif key == KeyCode.from_char('2'):
-            self.label_13.setStyleSheet('background-color: gray')
-            self.active_gamepad = self.gamepad_list[1]
-        elif key == KeyCode.from_char('3'):
-            self.label_14.setStyleSheet('background-color: gray')
-            self.active_gamepad = self.gamepad_list[2]
-        elif key == KeyCode.from_char('4'):
-            self.label_15.setStyleSheet('background-color: gray')
-            self.active_gamepad = self.gamepad_list[3]
+            if key == KeyCode.from_char('1'):
+                self.label_12.setStyleSheet('background-color: gray')
+                self.active_gamepad = self.gamepad_list[0]
+            elif key == KeyCode.from_char('2'):
+                self.label_13.setStyleSheet('background-color: gray')
+                self.active_gamepad = self.gamepad_list[1]
+            elif key == KeyCode.from_char('3'):
+                self.label_14.setStyleSheet('background-color: gray')
+                self.active_gamepad = self.gamepad_list[2]
+            elif key == KeyCode.from_char('4'):
+                self.label_15.setStyleSheet('background-color: gray')
+                self.active_gamepad = self.gamepad_list[3]
         elif key == KeyCode.from_char('r') and self.state in ['playing', 'input_recording']:
             self.reset()
         elif key in [KeyCode.from_char('q'),
