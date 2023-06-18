@@ -271,8 +271,8 @@ class UIFunc(QMainWindow, Ui_UIView):
             super().__init__()
             with open('replay.json', 'r') as f:
                 record = json.load(f)
-                self.pickup_flag = record[0]
-                self.record = record[1:]
+                self.pickup_flag = record['pickup_flag']
+                self.record = record['state']
             self.parent = parent
             self.parent.record = []
             self.controller = Controller()
@@ -447,18 +447,23 @@ class UIFunc(QMainWindow, Ui_UIView):
         path = 'records/record_' + time.strftime("%Y%m%d_%H%M%S_", time.localtime()) + \
                str(len(self.record)) + 'f.json'
         with open(path, 'w') as f:
-            f.write('[\n')
-            f.write('  [{},{},{},{}],\n'.format(int(self.pushButton.text()),
-                                                int(self.pushButton_2.text()),
-                                                int(self.pushButton_3.text()),
-                                                int(self.pushButton_4.text())))
+            f.write('{\n')
+            f.write('  \"pickup_flag\": [{},{},{},{}],\n'.format(
+                int(self.pushButton.text()),
+                int(self.pushButton_2.text()),
+                int(self.pushButton_3.text()),
+                int(self.pushButton_4.text()))
+            )
+            f.write('  \"state\": \n')
+            f.write('  [\n')
             for rf in self.record:
-                f.write('  [\n')
+                f.write('    [\n')
                 for rg in rf:
-                    f.write('    '+str(rg).lower())
+                    f.write('      '+str(rg).lower())
                     f.write('\n' if rg is rf[-1] else ',\n')
-                f.write('  ]\n' if rf is self.record[-1] else '  ],\n')
-            f.write(']\n')
+                f.write('    ]\n' if rf is self.record[-1] else '    ],\n')
+            f.write('  ]\n')
+            f.write('}\n')
 
     def reset(self):
         for widget in self.findChildren(QPushButton):
