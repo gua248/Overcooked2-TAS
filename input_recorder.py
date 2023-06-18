@@ -23,7 +23,7 @@ class UIFunc(QMainWindow, Ui_UIView):
         super(UIFunc, self).__init__()
         self.app = app
         self.setupUi(self)
-        self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
+        #self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
         self.label.setStyleSheet('background-color: rgb(135,206,235)')
         self.label_3.setStyleSheet('background-color: rgb(255,99,71)')
         self.label_2.setStyleSheet('background-color: rgb(0,201,87)')
@@ -201,7 +201,7 @@ class UIFunc(QMainWindow, Ui_UIView):
             elif os.path.exists('replay.json'):
                 self.state = 'replaying'
                 self.label_5.setText('VIDEO')
-                self.replay_thread = self.ReplayThread(self, video=True)
+                self.replay_thread = self.ReplayThread(self, video=True, audio=True)
                 self.replay_thread.signal.connect(self.replay_frame)
                 self.replay_thread.start()
 
@@ -283,7 +283,7 @@ class UIFunc(QMainWindow, Ui_UIView):
             if video:
                 width, height = QApplication.desktop().width(), QApplication.desktop().height()
                 fourcc = VideoWriter_fourcc(*'mp4v')
-                path = 'D:/TAS output/output_' + time.strftime("%Y%m%d_%H%M%S", time.localtime())
+                path = 'D:\\TAS output\\output_' + time.strftime("%Y%m%d_%H%M%S", time.localtime())
                 self.video = VideoWriter(path+'.mp4', fourcc, 50, (width, height))
             if audio:
                 self.audio_thread = UIFunc.AudioThread(parent, path)
@@ -301,7 +301,7 @@ class UIFunc(QMainWindow, Ui_UIView):
                 self.controller.press(Key.f10)
                 self.controller.release(Key.f10)
                 self.frame_cnt += 1
-                if self.frame_cnt % 5 == 1 and self.video:
+                if self.frame_cnt % 5 == 1 and self.audio_thread:
                     time.sleep(0.5)
                 else:
                     time.sleep(sleep_time)
