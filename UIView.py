@@ -432,7 +432,7 @@ class Ui_UIView(object):
         self.label_15.setText("")
         self.label_12.setText("")
         self.label_14.setText("")
-        self.label_16.setText(QCoreApplication.translate("UIView", u"F10\u4e0b\u4e00\u5e27 F5\u4fdd\u5b58 F3\u5207\u6362\u6a21\u5f0f", None))
+        self.label_16.setText(QCoreApplication.translate("UIView", u"F10\u91cd\u653e F11\u4e0b\u4e00\u5e27 F3\u5207\u6362\u6a21\u5f0f", None))
         self.label_17.setText(QCoreApplication.translate("UIView", u"FRAME 00000", None))
     # retranslateUi
 

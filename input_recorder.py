@@ -23,7 +23,7 @@ class UIFunc(QMainWindow, Ui_UIView):
         super(UIFunc, self).__init__()
         self.app = app
         self.setupUi(self)
-        #self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
+        self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
         self.label.setStyleSheet('background-color: rgb(135,206,235)')
         self.label_3.setStyleSheet('background-color: rgb(255,99,71)')
         self.label_2.setStyleSheet('background-color: rgb(0,201,87)')
@@ -80,7 +80,7 @@ class UIFunc(QMainWindow, Ui_UIView):
         self.active_gamepad = self.gamepad_list[0]
         self.label_12.setStyleSheet('background-color: gray')
         self.record = []
-        self.state = 'playing'  # in ['playing', 'input_recording', 'replaying']
+        self.state = 'playing'  # in ['playing', 'input_recording', 'video']
         self.label_5.setText('PLAY')
 
         self.ignore_key = False
@@ -90,20 +90,20 @@ class UIFunc(QMainWindow, Ui_UIView):
         def on_press(key):
             if key not in [Key.enter, Key.space,
                            Key.shift_l, Key.shift_r, Key.ctrl_l, Key.ctrl_r, Key.alt_l, Key.alt_r,
-                           Key.f3, Key.f5, Key.f10]:
+                           Key.f3, Key.f5, Key.f10, Key.f11]:
                 key = self.listener.canonical(key)
             self.key_press_signal.emit(key)
 
         def on_release(key):
             if key not in [Key.enter, Key.space,
                            Key.shift_l, Key.shift_r, Key.ctrl_l, Key.ctrl_r, Key.alt_l, Key.alt_r,
-                           Key.f3, Key.f5, Key.f10]:
+                           Key.f3, Key.f5, Key.f10, Key.f11]:
                 key = self.listener.canonical(key)
             self.key_release_signal.emit(key)
 
         self.listener = Listener(on_press=on_press, on_release=on_release)
         self.listener.start()
-        self.replay_thread = None
+        self.video_thread = None
 
     @Slot(Key)
     def key_release(self, key):
@@ -123,8 +123,8 @@ class UIFunc(QMainWindow, Ui_UIView):
             else:
                 if self.state == 'playing':
                     self.label_5.setText('PLAY')
-                elif self.state == 'replaying':
-                    self.label_5.setText('REPLAY')
+                elif self.state == 'video':
+                    self.label_5.setText('VIDEO')
                 else:
                     self.label_5.clear()
             return
@@ -169,41 +169,55 @@ class UIFunc(QMainWindow, Ui_UIView):
             else:
                 self.label_5.clear()
                 self.state = 'input_recording'
-        elif key == Key.f10 and self.state == 'input_recording':
+        elif key == Key.f10 and self.state == 'playing':
+            path = 'D:\\Steam\\steamapps\\common\\Overcooked! 2\\Mods\\replay.json'
+            if os.path.exists(path):
+                with open(path, 'r') as f:
+                    record = json.load(f)
+                    pickup_flag = record['pickup_flag']
+                    self.record = record['state']
+                    self.label_17.setText("FRAME {:05d}".format(len(self.record)))
+                    self.label_5.clear()
+                    self.pushButton.setText("{:05d}".format(pickup_flag[0]))
+                    self.pushButton_2.setText("{:05d}".format(pickup_flag[1]))
+                    self.pushButton_3.setText("{:05d}".format(pickup_flag[2]))
+                    self.pushButton_4.setText("{:05d}".format(pickup_flag[3]))
+                    time.sleep(0.1)
+                    if len(self.record) > 0:
+                        for j, rg in enumerate(self.record[-1]):
+                            self.gamepad_list[j].set_state(rg)
+                    for i, gamepad in enumerate(self.gamepad_list):
+                        dash_frame = [j for j, rf in enumerate(self.record) if rf[i][2] is True]
+                        last_dash_frame = dash_frame[-1] if len(dash_frame) > 0 else 0
+                        gamepad.button_dict['Dash'].setText("{:05d}".format(last_dash_frame))
+                    self.state = 'input_recording'
+
+        elif key == Key.f11 and self.state == 'input_recording':
             state = [gamepad.get_state() for gamepad in self.gamepad_list]
             self.record.append(state)
             self.label_5.clear()
             self.label_17.setText("FRAME {:05d}".format(len(self.record)))
-        elif key == Key.f10 and self.state == 'replaying' and self.replay_thread.video_stage == 0:
+        elif key == Key.f11 and self.state == 'video' and self.video_thread.video_stage == 0:
             time.sleep(0.05)
-            self.replay_thread.frame_cnt += 1
+            self.video_thread.frame_cnt += 1
             screenshot = ImageGrab.grab()
             screenshot = cvtColor(np.array(screenshot), COLOR_RGB2BGR)
-            self.replay_thread.video.write(screenshot)
+            self.video_thread.video.write(screenshot)
         elif key == Key.f5 and self.state == 'input_recording':
             self.save()
             self.label_5.setText('SAVED')
-        elif key == KeyCode.from_char('p') and self.state in ['replaying', 'playing']:
-            if self.state == 'replaying':
-                if self.replay_thread.video_stage == 0:
-                    self.replay_thread.video_stage = 1
+        elif key == KeyCode.from_char('p') and self.state in ['video', 'playing']:
+            if self.state == 'video':
+                if self.video_thread.video_stage == 0:
+                    self.video_thread.video_stage = 1
                 else:
                     self.state = 'input_recording'
             elif os.path.exists('replay.json'):
-                self.state = 'replaying'
-                self.label_5.setText('REPLAY')
-                self.replay_thread = self.ReplayThread(self)
-                self.replay_thread.signal.connect(self.replay_frame)
-                self.replay_thread.start()
-        elif key == KeyCode.from_char('o') and self.state in ['replaying', 'playing']:
-            if self.state == 'replaying':
-                self.state = 'input_recording'
-            elif os.path.exists('replay.json'):
-                self.state = 'replaying'
+                self.state = 'video'
                 self.label_5.setText('VIDEO')
-                self.replay_thread = self.ReplayThread(self, video=True, audio=True)
-                self.replay_thread.signal.connect(self.replay_frame)
-                self.replay_thread.start()
+                self.video_thread = self.VideoThread(self, video=True, audio=True)
+                self.video_thread.signal.connect(self.replay_frame)
+                self.video_thread.start()
 
     @Slot(list)
     def replay_frame(self, rf):
@@ -259,12 +273,12 @@ class UIFunc(QMainWindow, Ui_UIView):
                             input_device_index=default_speakers["index"],
                             stream_callback=callback
                             ) as stream:
-                    while self.parent.state == 'replaying':
+                    while self.parent.state == 'video':
                         time.sleep(0.1)  # Blocking execution while playing
 
                 wave_file.close()
 
-    class ReplayThread(QThread):
+    class VideoThread(QThread):
         signal = Signal(list)
 
         def __init__(self, parent, video=False, audio=False):
@@ -290,16 +304,16 @@ class UIFunc(QMainWindow, Ui_UIView):
                 self.audio_thread.start()
 
         def run(self):
-            while self.video_stage == 0 and self.parent.state == 'replaying':
+            while self.video_stage == 0 and self.parent.state == 'video':
                 time.sleep(0.1)
             for i, rf in enumerate(self.record):
-                if self.parent.state != 'replaying':
+                if self.parent.state != 'video':
                     break
                 self.signal.emit(rf)
                 sleep_time = 0.1 if self.video else 0.05
                 time.sleep(sleep_time)
-                self.controller.press(Key.f10)
-                self.controller.release(Key.f10)
+                self.controller.press(Key.f11)
+                self.controller.release(Key.f11)
                 self.frame_cnt += 1
                 if self.frame_cnt % 5 == 1 and self.audio_thread:
                     time.sleep(0.5)

@@ -714,7 +714,7 @@
      </font>
     </property>
     <property name="text">
-     <string>F10下一帧 F5保存 F3切换模式</string>
+     <string>F10重放 F11下一帧 F3切换模式</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_17">
