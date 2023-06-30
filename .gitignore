@@ -7,3 +7,4 @@ temp/
 *.ipynb
 play.py
 data.txt
+replay.json

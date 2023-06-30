@@ -363,11 +363,40 @@ class Ui_UIView(object):
         font5.setBold(True)
         font5.setWeight(75)
         self.label_17.setFont(font5)
+        self.groupBox_3 = QGroupBox(self.centralwidget)
+        self.groupBox_3.setObjectName(u"groupBox_3")
+        self.groupBox_3.setGeometry(QRect(10, 10, 12, 191))
+        self.groupBox_3.setStyleSheet(u"border: none")
+        self.gridLayout_3 = QGridLayout(self.groupBox_3)
+        self.gridLayout_3.setSpacing(0)
+        self.gridLayout_3.setObjectName(u"gridLayout_3")
+        self.gridLayout_3.setContentsMargins(0, 40, 0, 8)
+        self.label_19 = QLabel(self.groupBox_3)
+        self.label_19.setObjectName(u"label_19")
+
+        self.gridLayout_3.addWidget(self.label_19, 1, 0, 1, 1)
+
+        self.label_21 = QLabel(self.groupBox_3)
+        self.label_21.setObjectName(u"label_21")
+
+        self.gridLayout_3.addWidget(self.label_21, 3, 0, 1, 1)
+
+        self.label_18 = QLabel(self.groupBox_3)
+        self.label_18.setObjectName(u"label_18")
+
+        self.gridLayout_3.addWidget(self.label_18, 0, 0, 1, 1)
+
+        self.label_20 = QLabel(self.groupBox_3)
+        self.label_20.setObjectName(u"label_20")
+
+        self.gridLayout_3.addWidget(self.label_20, 2, 0, 1, 1)
+
         UIView.setCentralWidget(self.centralwidget)
         self.groupBox_2.raise_()
         self.groupBox.raise_()
         self.label_16.raise_()
         self.label_17.raise_()
+        self.groupBox_3.raise_()
         QWidget.setTabOrder(self.pushButton, self.pushButton_5)
         QWidget.setTabOrder(self.pushButton_5, self.pushButton_9)
         QWidget.setTabOrder(self.pushButton_9, self.doubleSpinBox)
@@ -434,5 +463,10 @@ class Ui_UIView(object):
         self.label_14.setText("")
         self.label_16.setText(QCoreApplication.translate("UIView", u"F10\u91cd\u653e F11\u4e0b\u4e00\u5e27 F3\u5207\u6362\u6a21\u5f0f", None))
         self.label_17.setText(QCoreApplication.translate("UIView", u"FRAME 00000", None))
+        self.groupBox_3.setTitle("")
+        self.label_19.setText("")
+        self.label_21.setText("")
+        self.label_18.setText("")
+        self.label_20.setText("")
     # retranslateUi
 

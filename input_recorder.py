@@ -18,6 +18,12 @@ import wave
 class UIFunc(QMainWindow, Ui_UIView):
     key_press_signal = Signal(Key)
     key_release_signal = Signal(Key)
+    keymap = {
+        'Pick': Key.space,
+        'Dash': KeyCode.from_char('.'),
+        'Use': KeyCode.from_char('/'),
+        'Emote': KeyCode.from_char('c')
+    }
 
     def __init__(self, app):
         super(UIFunc, self).__init__()
@@ -80,6 +86,9 @@ class UIFunc(QMainWindow, Ui_UIView):
         self.active_gamepad = self.gamepad_list[0]
         self.label_12.setStyleSheet('background-color: gray')
         self.record = []
+        self.cached_record = []
+        self.cached_flag = [False] * 4
+        self.first_frame_cached = False
         self.state = 'playing'  # in ['playing', 'input_recording', 'video']
         self.label_5.setText('PLAY')
 
@@ -109,9 +118,9 @@ class UIFunc(QMainWindow, Ui_UIView):
     def key_release(self, key):
         if self.state != 'playing' or self.ignore_key:
             return
-        if key in [KeyCode.from_char('q'),
+        if key in [KeyCode.from_char('q'), KeyCode.from_char('e'),
                    KeyCode.from_char('w'), KeyCode.from_char('a'), KeyCode.from_char('s'), KeyCode.from_char('d'),
-                   Key.space, KeyCode.from_char('.'), KeyCode.from_char('/'), KeyCode.from_char('c'), Key.enter]:
+                   *UIFunc.keymap.values(), Key.enter]:
             self.active_gamepad.release_playing(key)
 
     @Slot(Key)
@@ -150,9 +159,9 @@ class UIFunc(QMainWindow, Ui_UIView):
                 self.active_gamepad = self.gamepad_list[3]
         elif key == KeyCode.from_char('r') and self.state in ['playing', 'input_recording']:
             self.reset()
-        elif key in [KeyCode.from_char('q'),
+        elif key in [KeyCode.from_char('q'), KeyCode.from_char('e'),
                      KeyCode.from_char('w'), KeyCode.from_char('a'), KeyCode.from_char('s'), KeyCode.from_char('d'),
-                     Key.space, KeyCode.from_char('.'), KeyCode.from_char('/'), KeyCode.from_char('c'), Key.enter,
+                     *UIFunc.keymap.values(), Key.enter,
                      Key.alt_l] and self.state in ['playing', 'input_recording']:
             if self.state == 'input_recording':
                 self.active_gamepad.press_recording(key)
@@ -162,9 +171,15 @@ class UIFunc(QMainWindow, Ui_UIView):
             if self.state == 'input_recording':
                 self.save()
                 self.record = []
+                self.cached_record = []
+                self.cached_flag = [False] * 4
+                self.first_frame_cached = False
                 self.reset()
                 self.label_5.setText('PLAY')
                 self.label_17.setText("FRAME 00000")
+                label_list = [self.label_18, self.label_19, self.label_20, self.label_21]
+                for label in label_list:
+                    label.setStyleSheet('background-color: lightgray')
                 self.state = 'playing'
             else:
                 self.label_5.clear()
@@ -175,7 +190,20 @@ class UIFunc(QMainWindow, Ui_UIView):
                 with open(path, 'r') as f:
                     record = json.load(f)
                     pickup_flag = record['pickup_flag']
-                    self.record = record['state']
+                    record = record['state']
+                    for i, rf in enumerate(record):
+                        flag = [True] * 4
+                        for j, rg in enumerate(rf):
+                            if None in rg:
+                                flag[j] = False
+                        if not all(flag):
+                            self.record = record[:i]
+                            self.cached_record = record[i:]
+                            self.cached_flag = flag
+                            self.first_frame_cached = True
+                            break
+                    else:
+                        self.record = record
                     self.label_17.setText("FRAME {:05d}".format(len(self.record)))
                     self.label_5.clear()
                     self.pushButton.setText("{:05d}".format(pickup_flag[0]))
@@ -190,13 +218,33 @@ class UIFunc(QMainWindow, Ui_UIView):
                         dash_frame = [j for j, rf in enumerate(self.record) if rf[i][2] is True]
                         last_dash_frame = dash_frame[-1] if len(dash_frame) > 0 else 0
                         gamepad.button_dict['Dash'].setText("{:05d}".format(last_dash_frame))
+                    label_list = [self.label_18, self.label_19, self.label_20, self.label_21]
+                    for j in range(4):
+                        if self.cached_flag[j]:
+                            label_list[j].setStyleSheet('background-color: green')
                     self.state = 'input_recording'
 
         elif key == Key.f11 and self.state == 'input_recording':
-            state = [gamepad.get_state() for gamepad in self.gamepad_list]
-            self.record.append(state)
+            if not self.first_frame_cached:
+                state = [gamepad.get_state() for gamepad in self.gamepad_list]
+                self.record.append(state)
             self.label_5.clear()
             self.label_17.setText("FRAME {:05d}".format(len(self.record)))
+            self.first_frame_cached = False
+            if self.cached_record:
+                time.sleep(0.1)
+                rf = self.cached_record.pop(0)
+                label_list = [self.label_18, self.label_19, self.label_20, self.label_21]
+                for j, rg in enumerate(rf):
+                    if None in rg:
+                        self.cached_flag[j] = False
+                        label_list[j].setStyleSheet('background-color: lightgray')
+                    if self.cached_flag[j]:
+                        self.gamepad_list[j].set_state(rg)
+                if not self.cached_record:
+                    for label in label_list:
+                        label.setStyleSheet('background-color: lightgray')
+
         elif key == Key.f11 and self.state == 'video' and self.video_thread.video_stage == 0:
             time.sleep(0.05)
             self.video_thread.frame_cnt += 1
@@ -330,26 +378,30 @@ class UIFunc(QMainWindow, Ui_UIView):
                 self.video.release()
 
     class Gamepad:
+        q_coord = [
+            (-1.0, 0.5),  # q
+            (0.5, 1.0)      # e
+        ]
+
         def __init__(self, button_dict, parent):
             self.gamepad = vg.VX360Gamepad()
             self.button_dict = button_dict
             self.wasd_state = [False] * 4
-            self.q_coord = [(-1.0, -0.15)]
-            self.q_state = [False]
+            self.q_state = [False] * 2
             self.parent = parent
 
         def press_recording(self, key):
-            if key == Key.space or key == Key.enter:
+            if key == UIFunc.keymap['Pick'] or key == Key.enter:
                 self.button_dict['Pick'].click()
             if key == Key.alt_l:
                 self.button_dict['Pick'].setText("{:05d}".format(len(self.parent.record)))
-            if key == KeyCode.from_char('/'):
+            if key == UIFunc.keymap['Use']:
                 self.button_dict['Use'].click()
-            if key == KeyCode.from_char('.'):
+            if key == UIFunc.keymap['Dash']:
                 self.button_dict['Dash'].click()
                 if self.button_dict['Dash'].isChecked():
                     self.button_dict['Dash'].setText("{:05d}".format(len(self.parent.record)))
-            if key == KeyCode.from_char('c'):
+            if key == UIFunc.keymap['Emote']:
                 self.button_dict['Emote'].click()
             if key == KeyCode.from_char('d'):
                 self.button_dict['X'].setValue(self.button_dict['X'].value() + 1.0)
@@ -362,16 +414,19 @@ class UIFunc(QMainWindow, Ui_UIView):
             if key == KeyCode.from_char('q'):
                 self.button_dict['X'].setValue(self.q_coord[0][0])
                 self.button_dict['Y'].setValue(self.q_coord[0][1])
+            if key == KeyCode.from_char('e'):
+                self.button_dict['X'].setValue(self.q_coord[1][0])
+                self.button_dict['Y'].setValue(self.q_coord[1][1])
             self.update()
 
         def press_playing(self, key):
-            if key == Key.space or key == Key.enter:
+            if key == UIFunc.keymap['Pick'] or key == Key.enter:
                 self.button_dict['Pick'].setChecked(True)
-            if key == KeyCode.from_char('/'):
+            if key == UIFunc.keymap['Use']:
                 self.button_dict['Use'].setChecked(True)
-            if key == KeyCode.from_char('.'):
+            if key == UIFunc.keymap['Dash']:
                 self.button_dict['Dash'].setChecked(True)
-            if key == KeyCode.from_char('c'):
+            if key == UIFunc.keymap['Emote']:
                 self.button_dict['Emote'].setChecked(True)
             if key == KeyCode.from_char('d'):
                 self.wasd_state[3] = True
@@ -383,22 +438,27 @@ class UIFunc(QMainWindow, Ui_UIView):
                 self.wasd_state[2] = True
             if key == KeyCode.from_char('q'):
                 self.q_state[0] = True
+            if key == KeyCode.from_char('e'):
+                self.q_state[1] = True
             if self.q_state[0]:
                 self.button_dict['X'].setValue(self.q_coord[0][0])
                 self.button_dict['Y'].setValue(self.q_coord[0][1])
+            elif self.q_state[1]:
+                self.button_dict['X'].setValue(self.q_coord[1][0])
+                self.button_dict['Y'].setValue(self.q_coord[1][1])
             else:
                 self.button_dict['X'].setValue(self.wasd_state[1] * -1.0 + self.wasd_state[3] * 1.0)
                 self.button_dict['Y'].setValue(self.wasd_state[2] * -1.0 + self.wasd_state[0] * 1.0)
             self.update()
 
         def release_playing(self, key):
-            if key == Key.space or key == Key.enter:
+            if key == UIFunc.keymap['Pick'] or key == Key.enter:
                 self.button_dict['Pick'].setChecked(False)
-            if key == KeyCode.from_char('/'):
+            if key == UIFunc.keymap['Use']:
                 self.button_dict['Use'].setChecked(False)
-            if key == KeyCode.from_char('.'):
+            if key == UIFunc.keymap['Dash']:
                 self.button_dict['Dash'].setChecked(False)
-            if key == KeyCode.from_char('c'):
+            if key == UIFunc.keymap['Emote']:
                 self.button_dict['Emote'].setChecked(False)
             if key == KeyCode.from_char('d'):
                 self.wasd_state[3] = False
@@ -410,9 +470,14 @@ class UIFunc(QMainWindow, Ui_UIView):
                 self.wasd_state[2] = False
             if key == KeyCode.from_char('q'):
                 self.q_state[0] = False
+            if key == KeyCode.from_char('e'):
+                self.q_state[1] = False
             if self.q_state[0]:
                 self.button_dict['X'].setValue(self.q_coord[0][0])
                 self.button_dict['Y'].setValue(self.q_coord[0][1])
+            elif self.q_state[1]:
+                self.button_dict['X'].setValue(self.q_coord[1][0])
+                self.button_dict['Y'].setValue(self.q_coord[1][1])
             else:
                 self.button_dict['X'].setValue(self.wasd_state[1] * -1.0 + self.wasd_state[3] * 1.0)
                 self.button_dict['Y'].setValue(self.wasd_state[2] * -1.0 + self.wasd_state[0] * 1.0)
@@ -486,7 +551,7 @@ class UIFunc(QMainWindow, Ui_UIView):
             widget.setValue(0.0)
         for gamepad in self.gamepad_list:
             gamepad.wasd_state = [False] * 4
-            gamepad.q_state = [False]
+            gamepad.q_state = [False] * 2
             gamepad.update()
 
 
