@@ -1,0 +1,5 @@
+# Python 3.10.9
+
+pyside2==5.15.2.1
+pynput==1.7.6
+vgamepad==0.0.8
