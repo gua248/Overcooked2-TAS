@@ -8,11 +8,11 @@ import time
 from pynput.keyboard import Key, KeyCode
 from pynput.keyboard import Listener, Controller
 import os
-# from PIL import ImageGrab
-# from cv2 import VideoWriter, VideoWriter_fourcc, cvtColor, COLOR_RGB2BGR
-# import numpy as np
-# import pyaudiowpatch as pyaudio
-# import wave
+from PIL import ImageGrab
+from cv2 import VideoWriter, VideoWriter_fourcc, cvtColor, COLOR_RGB2BGR
+import numpy as np
+import pyaudiowpatch as pyaudio
+import wave
 
 
 class UIFunc(QMainWindow, Ui_UIView):
@@ -95,6 +95,9 @@ class UIFunc(QMainWindow, Ui_UIView):
         self.cached_record = []
         self.cached_flag = [False] * 4
         self.first_frame_cached = False
+        self.level = ""
+        self.menu = []
+        self.position_correction = []
         self.state = 'playing'  # in ['playing', 'input_recording', 'video']
         self.label_5.setText('PLAY')
 
@@ -105,14 +108,14 @@ class UIFunc(QMainWindow, Ui_UIView):
         def on_press(key):
             if key not in [Key.enter, Key.space,
                            Key.shift_l, Key.shift_r, Key.ctrl_l, Key.ctrl_r, Key.alt_l, Key.alt_r,
-                           Key.f3, Key.f5, Key.f10, Key.f11]:
+                           Key.f1, Key.f3, Key.f5, Key.f10, Key.f11]:
                 key = self.listener.canonical(key)
             self.key_press_signal.emit(key)
 
         def on_release(key):
             if key not in [Key.enter, Key.space,
                            Key.shift_l, Key.shift_r, Key.ctrl_l, Key.ctrl_r, Key.alt_l, Key.alt_r,
-                           Key.f3, Key.f5, Key.f10, Key.f11]:
+                           Key.f1, Key.f3, Key.f5, Key.f10, Key.f11]:
                 key = self.listener.canonical(key)
             self.key_release_signal.emit(key)
 
@@ -190,11 +193,19 @@ class UIFunc(QMainWindow, Ui_UIView):
             else:
                 self.label_5.clear()
                 self.state = 'input_recording'
+        elif key == Key.f5 and self.state == 'input_recording':
+            self.save()
+            self.label_5.setText('SAVED')
         elif key == Key.f10 and self.state == 'playing':
             if os.path.exists(UIFunc.replay_file_path):
                 with open(UIFunc.replay_file_path, 'r') as f:
                     record = json.load(f)
                     pickup_flag = record['pickup_flag']
+                    self.level = record['level'] if 'level' in record.keys() else ""
+                    self.menu = record['menu'] if 'menu' in record.keys() else []
+                    self.position_correction = record['position_correction'] \
+                        if 'position_correction' in record.keys() else []
+                    self.position_correction.sort(key=lambda x: x[1])
                     record = record['state']
                     for i, rf in enumerate(record):
                         flag = [True] * 4
@@ -215,13 +226,16 @@ class UIFunc(QMainWindow, Ui_UIView):
                     self.pushButton_2.setText("{:05d}".format(pickup_flag[1]))
                     self.pushButton_3.setText("{:05d}".format(pickup_flag[2]))
                     self.pushButton_4.setText("{:05d}".format(pickup_flag[3]))
-                    time.sleep(0.1)
+                    time.sleep(0.5)
                     if len(self.record) > 0:
                         for j, rg in enumerate(self.record[-1]):
                             self.gamepad_list[j].set_state(rg)
                     for i, gamepad in enumerate(self.gamepad_list):
                         dash_frame = [j for j, rf in enumerate(self.record) if rf[i][2] is True]
-                        last_dash_frame = dash_frame[-1] if len(dash_frame) > 0 else 0
+                        k = len(dash_frame)
+                        while k > 1 and dash_frame[k-2] == dash_frame[k-1] - 1:
+                            k -= 1
+                        last_dash_frame = dash_frame[k-1] if k > 0 else 0
                         gamepad.button_dict['Dash'].setText("{:05d}".format(last_dash_frame))
                     label_list = [self.label_18, self.label_19, self.label_20, self.label_21]
                     for j in range(4):
@@ -237,7 +251,7 @@ class UIFunc(QMainWindow, Ui_UIView):
             self.label_17.setText("FRAME {:05d}".format(len(self.record)))
             self.first_frame_cached = False
             if self.cached_record:
-                time.sleep(0.1)
+                time.sleep(0.3)
                 rf = self.cached_record.pop(0)
                 label_list = [self.label_18, self.label_19, self.label_20, self.label_21]
                 for j, rg in enumerate(rf):
@@ -250,137 +264,126 @@ class UIFunc(QMainWindow, Ui_UIView):
                     for label in label_list:
                         label.setStyleSheet('background-color: lightgray')
 
-        # elif key == Key.f11 and self.state == 'video' and self.video_thread.video_stage == 0:
-        #     time.sleep(0.05)
-        #     self.video_thread.frame_cnt += 1
-        #     screenshot = ImageGrab.grab()
-        #     screenshot = cvtColor(np.array(screenshot), COLOR_RGB2BGR)
-        #     self.video_thread.video.write(screenshot)
-        elif key == Key.f5 and self.state == 'input_recording':
-            self.save()
-            self.label_5.setText('SAVED')
-        # elif key == KeyCode.from_char('p') and self.state in ['video', 'playing']:
-        #     if self.state == 'video':
-        #         if self.video_thread.video_stage == 0:
-        #             self.video_thread.video_stage = 1
-        #         else:
-        #             self.state = 'input_recording'
-        #     elif os.path.exists('replay.json'):
-        #         self.state = 'video'
-        #         self.label_5.setText('VIDEO')
-        #         self.video_thread = self.VideoThread(self, video=True, audio=True)
-        #         self.video_thread.signal.connect(self.replay_frame)
-        #         self.video_thread.start()
+        elif key == Key.f11 and self.state == 'video' and self.video_thread.video_stage == 0:
+            time.sleep(0.1)
+            self.video_thread.frame_cnt += 1
+            screenshot = ImageGrab.grab()
+            screenshot = cvtColor(np.array(screenshot), COLOR_RGB2BGR)
+            self.video_thread.video.write(screenshot)
+        elif key == Key.f1 and self.state in ['video', 'playing']:
+            if self.state == 'video':
+                if self.video_thread.video_stage == 0:
+                    self.video_thread.video_stage = 1
+                else:
+                    self.label_5.setText('PLAY')
+                    self.label_17.setText("FRAME 00000")
+                    self.state = 'playing'
+            elif os.path.exists(UIFunc.replay_file_path):
+                self.state = 'video'
+                self.label_5.setText('VIDEO')
+                self.video_thread = self.VideoThread(self, audio=False)
+                self.video_thread.signal.connect(self.replay_frame)
+                self.video_thread.start()
 
     @Slot(list)
     def replay_frame(self, rf):
-        if isinstance(rf[0], int):
-            self.label_5.clear()
-            self.pushButton.setText("{:05d}".format(rf[0]))
-            self.pushButton_2.setText("{:05d}".format(rf[1]))
-            self.pushButton_3.setText("{:05d}".format(rf[2]))
-            self.pushButton_4.setText("{:05d}".format(rf[3]))
-        else:
-            for j, rg in enumerate(rf):
-                self.gamepad_list[j].set_state(rg)
-            self.record.append(rf)
-            self.label_17.setText("FRAME {:05d}".format(len(self.record)))
+        for j, rg in enumerate(rf):
+            self.gamepad_list[j].set_state(rg)
+        self.record.append(rf)
+        self.label_17.setText("FRAME {:05d}".format(len(self.record)))
 
-    # class AudioThread(QThread):
-    #     def __init__(self, parent, path):
-    #         super().__init__()
-    #         self.parent = parent
-    #         self.path = path
-    #
-    #     def run(self):
-    #         with pyaudio.PyAudio() as p:
-    #             try:
-    #                 wasapi_info = p.get_host_api_info_by_type(pyaudio.paWASAPI)
-    #             except OSError:
-    #                 print("Looks like WASAPI is not available on the system. Exiting...")
-    #                 raise
-    #             default_speakers = p.get_device_info_by_index(wasapi_info["defaultOutputDevice"])
-    #             if not default_speakers["isLoopbackDevice"]:
-    #                 for loopback in p.get_loopback_device_info_generator():
-    #                     if default_speakers["name"] in loopback["name"]:
-    #                         default_speakers = loopback
-    #                         break
-    #                 else:
-    #                     print("Default loopback output device not found.")
-    #                     raise OSError
-    #             print(f"Recording from: ({default_speakers['index']}){default_speakers['name']}")
-    #             wave_file = wave.open(self.path+'.wav', 'wb')
-    #             wave_file.setnchannels(default_speakers["maxInputChannels"])
-    #             wave_file.setsampwidth(pyaudio.get_sample_size(pyaudio.paInt16))
-    #             wave_file.setframerate(int(default_speakers["defaultSampleRate"]))
-    #
-    #             def callback(in_data, frame_count, time_info, status):
-    #                 wave_file.writeframes(in_data)
-    #                 return in_data, pyaudio.paContinue
-    #
-    #             with p.open(format=pyaudio.paInt16,
-    #                         channels=default_speakers["maxInputChannels"],
-    #                         rate=int(default_speakers["defaultSampleRate"]),
-    #                         frames_per_buffer=pyaudio.get_sample_size(pyaudio.paInt16),
-    #                         input=True,
-    #                         input_device_index=default_speakers["index"],
-    #                         stream_callback=callback
-    #                         ) as stream:
-    #                 while self.parent.state == 'video':
-    #                     time.sleep(0.1)  # Blocking execution while playing
-    #
-    #             wave_file.close()
+    class AudioThread(QThread):
+        def __init__(self, parent, path):
+            super().__init__()
+            self.parent = parent
+            self.path = path
 
-    # class VideoThread(QThread):
-    #     signal = Signal(list)
-    #
-    #     def __init__(self, parent, video=False, audio=False):
-    #         super().__init__()
-    #         with open('replay.json', 'r') as f:
-    #             record = json.load(f)
-    #             self.pickup_flag = record['pickup_flag']
-    #             self.record = record['state']
-    #         self.parent = parent
-    #         self.parent.record = []
-    #         self.controller = Controller()
-    #         self.video = None
-    #         self.video_stage = 0 if video else -1
-    #         self.audio_thread = None
-    #         self.frame_cnt = 0
-    #         if video:
-    #             width, height = QApplication.desktop().width(), QApplication.desktop().height()
-    #             fourcc = VideoWriter_fourcc(*'mp4v')
-    #             path = 'D:\\TAS output\\output_' + time.strftime("%Y%m%d_%H%M%S", time.localtime())
-    #             self.video = VideoWriter(path+'.mp4', fourcc, 50, (width, height))
-    #             if audio:
-    #                 self.audio_thread = UIFunc.AudioThread(parent, path)
-    #                 self.audio_thread.start()
-    #
-    #     def run(self):
-    #         while self.video_stage == 0 and self.parent.state == 'video':
-    #             time.sleep(0.1)
-    #         for i, rf in enumerate(self.record):
-    #             if self.parent.state != 'video':
-    #                 break
-    #             self.signal.emit(rf)
-    #             sleep_time = 0.1 if self.video else 0.05
-    #             time.sleep(sleep_time)
-    #             self.controller.press(Key.f11)
-    #             self.controller.release(Key.f11)
-    #             self.frame_cnt += 1
-    #             if self.frame_cnt % 5 == 1 and self.audio_thread:
-    #                 time.sleep(0.5)
-    #             else:
-    #                 time.sleep(sleep_time)
-    #             if self.video:
-    #                 screenshot = ImageGrab.grab()
-    #                 screenshot = cvtColor(np.array(screenshot), COLOR_RGB2BGR)
-    #                 self.video.write(screenshot)
-    #
-    #         self.signal.emit(self.pickup_flag)
-    #         self.parent.state = 'input_recording'
-    #         if self.video:
-    #             self.video.release()
+        def run(self):
+            with pyaudio.PyAudio() as p:
+                try:
+                    wasapi_info = p.get_host_api_info_by_type(pyaudio.paWASAPI)
+                except OSError:
+                    print("Looks like WASAPI is not available on the system. Exiting...")
+                    raise
+                default_speakers = p.get_device_info_by_index(wasapi_info["defaultOutputDevice"])
+                if not default_speakers["isLoopbackDevice"]:
+                    for loopback in p.get_loopback_device_info_generator():
+                        if default_speakers["name"] in loopback["name"]:
+                            default_speakers = loopback
+                            break
+                    else:
+                        print("Default loopback output device not found.")
+                        raise OSError
+                print(f"Recording from: ({default_speakers['index']}){default_speakers['name']}")
+                wave_file = wave.open(self.path+'.wav', 'wb')
+                wave_file.setnchannels(default_speakers["maxInputChannels"])
+                wave_file.setsampwidth(pyaudio.get_sample_size(pyaudio.paInt16))
+                wave_file.setframerate(int(default_speakers["defaultSampleRate"]))
+
+                def callback(in_data, frame_count, time_info, status):
+                    wave_file.writeframes(in_data)
+                    return in_data, pyaudio.paContinue
+
+                with p.open(format=pyaudio.paInt16,
+                            channels=default_speakers["maxInputChannels"],
+                            rate=int(default_speakers["defaultSampleRate"]),
+                            frames_per_buffer=pyaudio.get_sample_size(pyaudio.paInt16),
+                            input=True,
+                            input_device_index=default_speakers["index"],
+                            stream_callback=callback
+                            ) as stream:
+                    while self.parent.state == 'video':
+                        time.sleep(0.1)  # Blocking execution while playing
+
+                wave_file.close()
+
+    class VideoThread(QThread):
+        signal = Signal(list)
+
+        def __init__(self, parent, audio=False):
+            super().__init__()
+            with open(UIFunc.replay_file_path, 'r') as f:
+                record = json.load(f)
+                self.pickup_flag = record['pickup_flag']
+                self.record = record['state']
+            self.parent = parent
+            self.controller = Controller()
+            self.video_stage = 0
+            self.audio_thread = None
+            self.frame_cnt = 0
+            width, height = QApplication.desktop().width(), QApplication.desktop().height()
+            fourcc = VideoWriter_fourcc(*'mp4v')
+            path = 'D:\\TAS output\\output_' + time.strftime("%Y%m%d_%H%M%S", time.localtime())
+            self.video = VideoWriter(path+'.mp4', fourcc, 50, (width, height))
+            if audio:
+                self.audio_thread = UIFunc.AudioThread(parent, path)
+                self.audio_thread.start()
+
+        def run(self):
+            while self.video_stage == 0 and self.parent.state == 'video':
+                time.sleep(0.1)
+            time.sleep(0.5)
+            for i, rf in enumerate(self.record):
+                if self.parent.state != 'video':
+                    break
+                # self.signal.emit(rf)
+                # time.sleep(0.1)
+                self.controller.press(Key.f11)
+                self.controller.release(Key.f11)
+                self.frame_cnt += 1
+                # if self.frame_cnt % 5 == 1 and self.audio_thread:
+                #     time.sleep(0.5)
+                # else:
+                time.sleep(0.1)
+                if self.video:
+                    screenshot = ImageGrab.grab()
+                    screenshot = cvtColor(np.array(screenshot), COLOR_RGB2BGR)
+                    self.video.write(screenshot)
+
+            self.parent.state = 'playing'
+            self.parent.label_5.setText('PLAY')
+            self.parent.label_17.setText("FRAME 00000")
+            self.video.release()
 
     class Gamepad:
         def __init__(self, button_dict, parent):
@@ -523,26 +526,52 @@ class UIFunc(QMainWindow, Ui_UIView):
             gamepad.update()
 
     def save(self):
+        save_record = []
+        save_record += self.record
+        if self.cached_record and not self.first_frame_cached:
+            state = [gamepad.get_state() for gamepad in self.gamepad_list]
+            for j in range(4):
+                if not self.cached_flag[j]:
+                    state[j][0] = None
+            save_record.append(state)
+            save_record += self.cached_record
         path = 'records/record_' + time.strftime("%Y%m%d_%H%M%S_", time.localtime()) + \
-               str(len(self.record)) + 'f.json'
+               str(len(save_record)) + 'f.json'
         with open(path, 'w') as f:
             f.write('{\n')
+            f.write('  \"author\": \"{}\",\n'.format(UIFunc.author))
+            f.write('  \"level\": \"{}\",\n'.format(self.level))
+            f.write('  \"menu\": {},\n'.format(self.menu))
             f.write('  \"pickup_flag\": [{},{},{},{}],\n'.format(
                 int(self.pushButton.text()),
                 int(self.pushButton_2.text()),
                 int(self.pushButton_3.text()),
                 int(self.pushButton_4.text()))
             )
+            if not self.position_correction:
+                f.write('  \"position_correction\": [],\n')
+            else:
+                f.write('  \"position_correction\": \n')
+                f.write('  [\n')
+                for pc in self.position_correction:
+                    if len(pc) == 5:
+                        f.write('    [\"{}\", {}, {:.4f}, {:.4f}, {:.4f}]'.format(*pc))
+                    elif len(pc) == 6:
+                        f.write('    [\"{}\", {}, {:.4f}, {:.4f}, {:.4f}, {}]'.format(*pc))
+                    else:
+                        f.write('    [\"Error\", -1, 0.0, 0.0, 0.0]')
+                    f.write('\n' if pc is self.position_correction[-1] else ',\n')
+                f.write('  ],\n')
+
             f.write('  \"state\": \n')
             f.write('  [\n')
-            for rf in self.record:
+            for rf in save_record:
                 f.write('    [\n')
                 for rg in rf:
-                    f.write('      '+str(rg).lower())
+                    f.write('      '+str(rg).lower().replace("none", "null"))
                     f.write('\n' if rg is rf[-1] else ',\n')
-                f.write('    ]\n' if rf is self.record[-1] else '    ],\n')
-            f.write('  ],\n')
-            f.write('  \"author\": \"{}\"\n'.format(UIFunc.author))
+                f.write('    ]\n' if rf is save_record[-1] else '    ],\n')
+            f.write('  ]\n')
             f.write('}\n')
 
     def reset(self):
