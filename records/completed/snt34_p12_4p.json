@@ -5,22 +5,24 @@
   "pickup_flag": [9283,9307,9275,9256],
   "position_correction": 
   [
-    ["Player 4", 2066, 9.4302, 0.0000, 10.6001, True],
-    ["Player 3", 2170, 2.2029, 0.0000, 10.6480, True],
-    ["Player 3", 3271, -1.7755, 1.0031, 13.9912, True],
-    ["Player 3", 4598, 2.1499, 0.0000, 10.8581, True],
-    ["Player 4", 5720, 4.7646, 0.0000, 11.6515, True],
-    ["ChoppedKebobMeat(Clone)_Rigidbody", 6220, -4.7071, 0.5100, 7.3278, True],
-    ["Player 3", 6378, -3.1779, 0.9620, 11.1881, True],
-    ["Player 3", 6391, -3.1779, 0.0000, 7.8285, True],
-    ["Player 4", 7112, 10.5982, 1.0000, 12.9420, True],
-    ["Player 3", 7200, -1.0000, 0.0000, 6.7813, True],
-    ["Player 3", 7467, -3.4490, 1.2864, 11.3230, True],
-    ["Player 3", 7481, -1.9593, 1.0002, 13.6270, True],
-    ["Player 3", 8035, 2.4999, 1.0000, 13.6000, True],
-    ["Player 3", 8164, -2.2011, 1.0000, 13.8389, True],
-    ["equipment_glass_01(Clone)_Rigidbody", 8908, 2.6770, 0.5484, 12.3023, True],
-    ["Player 4", 8934, 7.4881, 0.0000, 11.6036, True]
+    ["Player 4", 2066, 9.4302, 0.0000, 10.6001, true],
+    ["Player 3", 2170, 2.2029, 0.0000, 10.6480, true],
+    ["Player 3", 3271, -1.7755, 1.0031, 13.9912, true],
+    ["Player 3", 4314, -1.5854, 1.0000, 14.5939, true],
+    ["Player 3", 4598, 2.1501, 0.0000, 10.8581, true],
+    ["Player 4", 5720, 4.7646, 0.0000, 11.6515, true],
+    ["ChoppedKebobMeat(Clone)_Rigidbody", 6220, -4.7071, 0.5100, 7.3278, true],
+    ["Player 3", 6378, -3.1779, 0.9620, 11.1881, true],
+    ["Player 3", 6391, -3.1779, 0.0000, 7.8285, true],
+    ["Player 4", 7112, 10.5982, 1.0000, 12.9420, true],
+    ["Player 3", 7200, -1.0000, 0.0000, 6.7814, true],
+    ["ChoppedKebobMeat(Clone)_Rigidbody", 7291, -5.0089, 0.5100, 9.7056, true],
+    ["Player 3", 7467, -3.4484, 1.2864, 11.3230, true],
+    ["Player 3", 7481, -1.9587, 1.0002, 13.6270, true],
+    ["Player 3", 8035, 2.4931, 1.0000, 13.6000, true],
+    ["Player 3", 8257, 4.3316, 0.0000, 4.7981, true],
+    ["equipment_glass_01(Clone)_Rigidbody", 8909, 2.6084, 0.5483, 12.3465, true],
+    ["Player 4", 8934, 7.4882, 0.0000, 11.6036, true]
   ],
   "state": 
   [
@@ -43905,7 +43907,7 @@
     [
       [false, false, false, false, 0.0, 0.0],
       [false, true, false, false, -1.0, 0.2],
-      [true, false, false, false, 1.0, 1.0],
+      [true, false, false, false, 1.0, 0.99],
       [false, true, false, false, -1.0, -0.19999999999999968]
     ],
     [
@@ -49047,7 +49049,7 @@
     [
       [false, false, false, false, 0.0, 0.0],
       [false, false, false, false, 0.0, -1.0],
-      [true, false, false, false, 0.0, -1.0],
+      [false, false, false, false, 0.0, -1.0],
       [true, false, true, false, 1.0, 1.0]
     ],
     [
@@ -50337,19 +50339,19 @@
     [
       [false, false, false, false, 0.0, 0.0],
       [false, false, false, false, 0.0, 1.0],
-      [false, false, false, false, -1.0, -1.0],
+      [false, false, false, false, -0.3, -1.0],
       [true, false, true, false, 1.0, 1.0]
     ],
     [
       [false, false, false, false, 0.0, 0.0],
       [false, false, false, false, 0.0, 1.0],
-      [false, false, false, false, -1.0, -1.0],
+      [false, false, false, false, -0.5, -1.0],
       [true, false, true, false, 1.0, 1.0]
     ],
     [
       [false, false, false, false, 0.0, 0.0],
       [false, false, false, false, 0.0, 1.0],
-      [false, false, false, false, -1.0, -1.0],
+      [false, false, false, false, -0.8, -1.0],
       [true, false, true, false, 1.0, 1.0]
     ],
     [
@@ -50373,7 +50375,7 @@
     [
       [false, false, false, false, 0.0, 0.0],
       [false, false, false, false, 0.0, 1.0],
-      [true, false, false, false, 0.0, 1.0],
+      [true, false, false, false, -0.5, 1.0],
       [false, false, false, false, 0.0, 1.0]
     ],
     [
@@ -50385,7 +50387,7 @@
     [
       [false, false, false, false, 0.0, 0.0],
       [false, false, false, false, 0.0, 1.0],
-      [false, false, false, false, 0.0, 1.0],
+      [false, false, false, false, 0.5, 1.0],
       [false, false, false, false, 0.0, 1.0]
     ],
     [
@@ -51261,13 +51263,13 @@
     [
       [false, false, false, false, 0.0, 0.0],
       [false, true, false, false, -1.0, 0.0],
-      [false, false, false, false, 1.0, 1.0],
+      [false, false, false, false, 0.5, 1.0],
       [false, false, false, false, 1.0, 0.0]
     ],
     [
       [true, true, false, false, 0.0, 0.0],
       [false, true, false, false, -1.0, 0.0],
-      [false, false, false, false, 1.0, 1.0],
+      [false, false, false, false, 0.0, 1.0],
       [false, false, false, false, 1.0, 1.0]
     ],
     [

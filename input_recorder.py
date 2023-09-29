@@ -557,7 +557,8 @@ class UIFunc(QMainWindow, Ui_UIView):
                     if len(pc) == 5:
                         f.write('    [\"{}\", {}, {:.4f}, {:.4f}, {:.4f}]'.format(*pc))
                     elif len(pc) == 6:
-                        f.write('    [\"{}\", {}, {:.4f}, {:.4f}, {:.4f}, {}]'.format(*pc))
+                        f.write('    [\"{}\", {}, {:.4f}, {:.4f}, {:.4f}'.format(*pc[:5])
+                                + ', {}]'.format(pc[5]).lower())
                     else:
                         f.write('    [\"Error\", -1, 0.0, 0.0, 0.0]')
                     f.write('\n' if pc is self.position_correction[-1] else ',\n')
