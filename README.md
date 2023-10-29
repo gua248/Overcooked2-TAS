@@ -31,9 +31,9 @@ Copy `plugin/bin/Release/OC2TAS.dll` and `ffmpeg.exe` to the game's `BepInEx/plu
 
 You may modify the code and recompile it. The following dependencies need to be copied into the `plugin/lib/` directory: 
 
-- In the game's `Overcooked2_Data/Managed/` directory `Assembly-CSharp.dll, UnityEngine.dll, UnityEngine.AnimationModule.dll, UnityEngine.AudioModule.dll, UnityEngine.CoreModule.dll, UnityEngine.ImageConversionModule.dll, UnityEngine. UnityEngine.AudioModule.dll, UnityEngine.CoreModule.dll, UnityEngine.ImageConversionModule.dll, UnityEngine.IMGUIModule.dll, UnityEngine.ParticleSystemModule.dll, UnityEngine.PhysicsModule.dll, UnityEngine.TextRenderingModule.dll`。
+- In the game's `Overcooked2_Data/Managed/` directory `Assembly-CSharp.dll`, `UnityEngine.dll`, `UnityEngine.AnimationModule.dll`, `UnityEngine.AudioModule.dll`, `UnityEngine.CoreModule.dll`, `UnityEngine.ImageConversionModule.dll`, `UnityEngine.IMGUIModule.dll`, `UnityEngine.ParticleSystemModule.dll`, `UnityEngine.PhysicsModule.dll`, `UnityEngine.TextRenderingModule.dll`.
 
-- In `BepInEx/core/` directory ` 0Harmony20.dll, BepInEx.dll, BepInEx.Harmony.dll`。
+- In `BepInEx/core/` directory `0Harmony20.dll`, `BepInEx.dll`, `BepInEx.Harmony.dll`.
 
 ### Virtual gamepad controller and recorder
 
@@ -60,7 +60,7 @@ python ./controller.py
 
 - `w` `a` `s` `d` controls the direction, other keys can be set in `UIFunc.keymap` in `controller.py` (mapped to the `A` `B` `X` `Y` buttons of the virtual gamepad). Additionally, the Enter key is mapped to the `A` button, in order to avoid adding keyboard players from pressing space when adding players in the main menu.
 
-- Besides the eight angles derived from up, down, left, and right, other angles can be set by using the mouse wheel to modify the `X,Y` values while recording. ⚠️**Do not click the input box. Losing focus on the game window will cause the gamepad input to fail.**
+- Besides the eight angles derived from up, down, left, and right, other angles can be set by using the mouse wheel to modify the `X`, `Y` values while recording. ⚠️**Do not click the input box. Losing focus on the game window will cause the gamepad input to fail.**
 
 - Press `F3` to switch between play mode/record mode. In record mode, press a key once to press and press again to release the corresponding gamepad button, similar to the direction keys.
 
@@ -85,7 +85,9 @@ python ./controller.py
 <div align="center">
     <img src="script.png" width="50%" height="50%" />
 </div>
-Scripts are saved in `json` format.
+
+
+Scripts are saved in json format.
 
 > - `author` is the script author, which can be set in `UIFunc.author` in `controller.py`.
 > - `level` is the script's level name, which will be filled in automatically when you first record a level.
@@ -172,7 +174,7 @@ where each position correction instruction is composed of `[object name, frame p
 
 - **The fixed frame rate for recording is 50 fps.**
 
-- **To make the controller window sit on top of the full-screen game, you need to add a startup option `-popupwindow` to the game. **
+- **To make the controller window sit on top of the full-screen game, you need to add a startup option `-popupwindow` to the game.**
 
 - Some keys have feedback immediately after being pressed, such as pickup and place, chop and wash, throw aim, and throw. Dash key needs to step one frame to take effect. If you find that the dash key is pressed wrongly, just change it back to release before stepping one frame.
 

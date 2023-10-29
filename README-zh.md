@@ -31,8 +31,8 @@
 
 你可以修改代码后重新编译。需要将以下依赖项拷贝到 `plugin/lib` 目录下：
 
-- 游戏 `Overcooked2_Data/Managed` 目录下 `Assembly-CSharp.dll, UnityEngine.dll, UnityEngine.AnimationModule.dll, UnityEngine.AudioModule.dll, UnityEngine.CoreModule.dll, UnityEngine.ImageConversionModule.dll, UnityEngine.IMGUIModule.dll, UnityEngine.ParticleSystemModule.dll, UnityEngine.PhysicsModule.dll, UnityEngine.TextRenderingModule.dll`。
-- `BepInEx/core` 目录下 `0Harmony20.dll, BepInEx.dll, BepInEx.Harmony.dll`。
+- 游戏 `Overcooked2_Data/Managed` 目录下 `Assembly-CSharp.dll`, `UnityEngine.dll`, `UnityEngine.AnimationModule.dll`, `UnityEngine.AudioModule.dll`, `UnityEngine.CoreModule.dll`, `UnityEngine.ImageConversionModule.dll`, `UnityEngine.IMGUIModule.dll`, `UnityEngine.ParticleSystemModule.dll`, `UnityEngine.PhysicsModule.dll`, `UnityEngine.TextRenderingModule.dll`。
+- `BepInEx/core` 目录下 `0Harmony20.dll`, `BepInEx.dll`, `BepInEx.Harmony.dll`。
 
 ### 虚拟手柄控制和输入记录器
 
@@ -57,7 +57,7 @@ python ./controller.py
 
 - 运行后创建四个虚拟手柄，数字键 `1` `2` `3` `4` 可切换控制的手柄。
 - `w` `a` `s` `d` 控制方向，其他按键可以在 `controller.py` 的 `UIFunc.keymap` 设置（映射到虚拟手柄的 `A` `B` `X` `Y` 键）。另外，回车键映射到 `A` 键，目的是在主菜单添加玩家时避免按空格导致添加键盘玩家。
-- 除了上下左右控制的八个角度，其他角度可以在录制时用鼠标滚轮修改 `X,Y` 值。⚠️**不要点击输入框，游戏窗口失去焦点会导致手柄输入失效。**
+- 除了上下左右控制的八个角度，其他角度可以在录制时用鼠标滚轮修改 `X`, `Y` 值。⚠️**不要点击输入框，游戏窗口失去焦点会导致手柄输入失效。**
 - 按 `F3` 可以切换游玩模式 / 录制模式。在录制模式下，按一次按键对应按下，再按一次对应松开相应按键，方向键类似。
 - 在录制模式下，按 `F11` 会记录当前手柄状态，并进入下一帧。下一帧的默认手柄状态与前一帧相同。
 - 在录制模式下，按 `F5` 会保存到上一帧为止录制的脚本到 `records/` 目录。切换回游玩模式时也会自动保存。
@@ -72,7 +72,7 @@ python ./controller.py
 </div>
 
 
-脚本用 `json` 格式保存。
+脚本用 json 格式保存。
 
 > - `author` 为脚本作者，可以在 `controller.py` 的 `UIFunc.author` 设置。
 > - `level` 为脚本对应的关卡名，在初次录制时会自动填写。
