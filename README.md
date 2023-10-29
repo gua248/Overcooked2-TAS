@@ -60,7 +60,7 @@ python ./controller.py
 
 - `w` `a` `s` `d` controls the direction, other keys can be set in `UIFunc.keymap` in `controller.py` (mapped to the `A` `B` `X` `Y` buttons of the virtual gamepad). Additionally, the Enter key is mapped to the `A` button, in order to avoid adding keyboard players from pressing space when adding players in the main menu.
 
-- Besides the eight angles derived from up, down, left, and right, other angles can be set by using the mouse wheel to modify the `X,Y` values while recording. ⚠️__Do not click the input box. Losing focus on the game window will cause the gamepad input to fail.__
+- Besides the eight angles derived from up, down, left, and right, other angles can be set by using the mouse wheel to modify the `X,Y` values while recording. ⚠️**Do not click the input box. Losing focus on the game window will cause the gamepad input to fail.**
 
 - Press `F3` to switch between play mode/record mode. In record mode, press a key once to press and press again to release the corresponding gamepad button, similar to the direction keys.
 
@@ -68,7 +68,7 @@ python ./controller.py
 
 - In record mode, press `F5` to save the script recorded up to the last frame to the `records/` directory. The script will also be saved automatically when switching back to play mode.
 
-- In play mode, press `F10` to read the `replay.json` script in the `BepInEx/plugins/` directory of the game as the history and continue recording from the next frame of the script. ⚠️__You need to change the `UIFunc.replay_file_path` in `controller.py` to the correct path.__
+- In play mode, press `F10` to read the `replay.json` script in the `BepInEx/plugins/` directory of the game as the history and continue recording from the next frame of the script. ⚠️**You need to change the `UIFunc.replay_file_path` in `controller.py` to the correct path.**
 
 - There are two important cooldowns in the game: 
 
@@ -109,7 +109,7 @@ Scripts are saved in `json` format.
    > #### Menu numbering order
    > - If you have UnityExplorer installed, you can see the menu numbering order in the `FlowManager` game object, `Server*FlowController` component, `LevelConfig.m_rounds[*].m_recipes.m_recipes` field.
    > - You can also fill it in arbitrarily, replay the script, and watch the menus appear to determine the menu numbering order.
-   > - ⚠️__Note the [legality](https://www.bilibili.com/read/cv11638996) of a menu.__
+   > - ⚠️**Note the [legality](https://www.bilibili.com/read/cv11638996) of a menu.**
 
 4. Subsequent recording starts with replaying this empty script.
 
@@ -119,7 +119,7 @@ Scripts are saved in `json` format.
 1. Copy the script to be replayed into the game's `BepInEx/plugins/` directory and rename it to `replay.json`.
 
 
-2. Edit the script, e.g. delete some frames at the end that need to be re-recorded or change the value of some buttons (⚠️__make sure the script is in the correct format, no extra commas__).
+2. Edit the script, e.g. delete some frames at the end that need to be re-recorded or change the value of some buttons (⚠️**make sure the script is in the correct format, no extra commas**).
 
 
 3. Enter the level and press `F9` to pause at the level preparation, then press `F10` to replay (the controller will automatically switch to record mode and read the script as history).
@@ -133,7 +133,7 @@ Scripts are saved in `json` format.
    > Sometimes when you only want to re-record the last frames of a certain player, you can use partial re-recording instead of deleting the last frames of all players.
    > 1. Find the starting frame to be re-recorded in the script, and change the value of the first key of the player to be re-recorded to `null` (the automatically generated empty script contains one frame with 4 `null`s).
    > 2. Replay the script.
-   > 3. ⚠️__After the replay is over, press `F11` one additional time to load the gamepad states of the non-re-recording players of the first frame after the replay (the game will not step by one frame on this press of `F11`)__.
+   > 3. ⚠️**After the replay is over, press `F11` one additional time to load the gamepad states of the non-re-recording players of the first frame after the replay (the game will not step by one frame on this press of `F11`)**.
    > 4. Continue recording, and at each subsequent frame the non-re-recording players' gamepad states will be automatically loaded from the script.
    > 5. Once out of the range of the script, return to normal recording.
 
@@ -151,7 +151,7 @@ Enter the level and press `F9` to pause at the level preparation, then press `F1
 In most cases, the result obtained from replay is deterministic. However, since the Unity engine's physics calculations are not completely deterministic, in some cases there can be small deviations in player and item coordinates that cumulatively can lead to incorrect results, such as going up and down stairs, or items not attaching to a countertop. Position correction can be used to ensure replay determinism in these cases. Add a key-value pair to the script like
 
 ```json
-  "position_correction". 
+  "position_correction": 
   [
     ["Player 4", 2066, 9.4302, 0.0000, 10.6001],
     ["Player 3", 2170, 2.2029, 0.0000, 10.6480],
@@ -161,18 +161,18 @@ In most cases, the result obtained from replay is deterministic. However, since 
 
 where each position correction instruction is composed of `[object name, frame position, x, y, z]`, meaning that the coordinate of the object is set to `(x, y, z)` at that frame. The plugin supports pressing `F8` to show/hide the player's coordinates.
 
-> - ⚠️__This feature is against the principle of TAS that you can't modify the logic of the game, so please use it with caution. If you have to use it, please make sure that every position correction instruction comes from the result of a certain replay.__
-> - ⚠️__Note that position correction instructions only modify position coordinates, and that other kinematic properties such as speed are also affected by indeterminacy when the object is accelerating, decelerating, or changing direction.__
-> - When replaying, if the original coordinate is already the same as the coordinate in a position correction instruction, no changes will be made. The output log (`BepInEx/LogOutput.log`) contains the information of the execution of the position correction instructions. __It should be ensured that every instruction is at least once not executed.__
+> - ⚠️**This feature is against the principle of TAS that you can't modify the logic of the game, so please use it with caution. If you have to use it, please make sure that every position correction instruction comes from the result of a certain replay.**
+> - ⚠️**Note that position correction instructions only modify position coordinates, and that other kinematic properties such as speed are also affected by indeterminacy when the object is accelerating, decelerating, or changing direction.**
+> - When replaying, if the original coordinate is already the same as the coordinate in a position correction instruction, no changes will be made. The output log (`BepInEx/LogOutput.log`) contains the information of the execution of the position correction instructions. **It should be ensured that every instruction is at least once not executed.**
 > - For game objects other than players, you need to use tools such as `UnityExplorer` to view the object name and coordinate.
 
 
 
 ## Tips
 
-- __The fixed frame rate for recording is 50 fps.__
+- **The fixed frame rate for recording is 50 fps.**
 
-- __To make the controller window sit on top of the full-screen game, you need to add a startup option `-popupwindow` to the game. __
+- **To make the controller window sit on top of the full-screen game, you need to add a startup option `-popupwindow` to the game. **
 
 - Some keys have feedback immediately after being pressed, such as pickup and place, chop and wash, throw aim, and throw. Dash key needs to step one frame to take effect. If you find that the dash key is pressed wrongly, just change it back to release before stepping one frame.
 
@@ -212,7 +212,7 @@ This framework is based on raw button input, which is the simplest and most low-
 - Assuming the game logic frame rate is infinite. In the original game logic, there is a delay of 1 to 2 logic frames for events that should take effect immediately, even if the game is played locally. We don't want to waste these delays in a fixed frame rate of 50 frames per second. Since logic frame rates are generally > 200 >> 50, we assume that the game's logic frame rate is infinite and erase such delays.
 - Using position correction instructions as a last resort.
 
-__Any TAS scripts made with this tool are welcome to be committed to this GitHub repository.__
+**Any TAS scripts made with this tool are welcome to be committed to this GitHub repository.**
 
 
 
