@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>571</width>
-    <height>241</height>
+    <height>251</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -22,7 +22,7 @@
     <property name="geometry">
      <rect>
       <x>9</x>
-      <y>9</y>
+      <y>19</y>
       <width>551</width>
       <height>191</height>
      </rect>
@@ -142,7 +142,7 @@
         </font>
        </property>
        <property name="text">
-        <string>拿放</string>
+        <string>PICKUP</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignCenter</set>
@@ -377,7 +377,7 @@
         </font>
        </property>
        <property name="text">
-        <string>跑</string>
+        <string>DASH</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignCenter</set>
@@ -480,7 +480,7 @@
         </font>
        </property>
        <property name="text">
-        <string>交互</string>
+        <string>USE</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignCenter</set>
@@ -515,7 +515,7 @@
         </font>
        </property>
        <property name="text">
-        <string>表情</string>
+        <string>EMOTE</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignCenter</set>
@@ -642,8 +642,8 @@
    <widget class="QGroupBox" name="groupBox_2">
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>10</y>
+      <x>9</x>
+      <y>19</y>
       <width>551</width>
       <height>191</height>
      </rect>
@@ -697,31 +697,11 @@
      </item>
     </layout>
    </widget>
-   <widget class="QLabel" name="label_16">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>210</y>
-      <width>311</width>
-      <height>21</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <pointsize>12</pointsize>
-      <weight>75</weight>
-      <bold>true</bold>
-     </font>
-    </property>
-    <property name="text">
-     <string>F10重放 F11下一帧 F3切换模式</string>
-    </property>
-   </widget>
    <widget class="QLabel" name="label_17">
     <property name="geometry">
      <rect>
       <x>440</x>
-      <y>210</y>
+      <y>220</y>
       <width>111</width>
       <height>21</height>
      </rect>
@@ -800,7 +780,6 @@
    </widget>
    <zorder>groupBox_2</zorder>
    <zorder>groupBox</zorder>
-   <zorder>label_16</zorder>
    <zorder>label_17</zorder>
    <zorder>groupBox_3</zorder>
   </widget>

@@ -1,18 +1,13 @@
 import sys
 from PySide2.QtWidgets import QApplication, QMainWindow, QPushButton, QDoubleSpinBox
-from PySide2.QtCore import Qt, Signal, Slot, QThread
+from PySide2.QtCore import Qt, Signal, Slot
 from UIView import Ui_UIView
 import vgamepad as vg
 import json
 import time
 from pynput.keyboard import Key, KeyCode
-from pynput.keyboard import Listener, Controller
+from pynput.keyboard import Listener
 import os
-from PIL import ImageGrab
-from cv2 import VideoWriter, VideoWriter_fourcc, cvtColor, COLOR_RGB2BGR
-import numpy as np
-import pyaudiowpatch as pyaudio
-import wave
 
 
 class UIFunc(QMainWindow, Ui_UIView):
@@ -24,12 +19,8 @@ class UIFunc(QMainWindow, Ui_UIView):
         'Use': KeyCode.from_char('/'),
         'Emote': KeyCode.from_char('c')
     }
-    replay_file_path = 'D:\\Steam\\steamapps\\common\\Overcooked! 2\\Mods\\replay.json'
+    replay_file_path = 'D:\\Steam\\steamapps\\common\\Overcooked! 2\\BepInEx\\plugins\\replay.json'
     author = 'GUA'
-    q_coord = [
-        (-1.0, 0.5),  # q
-        (0.5, 1.0)    # e
-    ]
 
     def __init__(self, app):
         super(UIFunc, self).__init__()
@@ -98,7 +89,7 @@ class UIFunc(QMainWindow, Ui_UIView):
         self.level = ""
         self.menu = []
         self.position_correction = []
-        self.state = 'playing'  # in ['playing', 'input_recording', 'video']
+        self.state = 'playing'  # in ['playing', 'input_recording']
         self.label_5.setText('PLAY')
 
         self.ignore_key = False
@@ -108,27 +99,25 @@ class UIFunc(QMainWindow, Ui_UIView):
         def on_press(key):
             if key not in [Key.enter, Key.space,
                            Key.shift_l, Key.shift_r, Key.ctrl_l, Key.ctrl_r, Key.alt_l, Key.alt_r,
-                           Key.f1, Key.f3, Key.f5, Key.f10, Key.f11]:
+                           Key.f3, Key.f5, Key.f10, Key.f11]:
                 key = self.listener.canonical(key)
             self.key_press_signal.emit(key)
 
         def on_release(key):
             if key not in [Key.enter, Key.space,
                            Key.shift_l, Key.shift_r, Key.ctrl_l, Key.ctrl_r, Key.alt_l, Key.alt_r,
-                           Key.f1, Key.f3, Key.f5, Key.f10, Key.f11]:
+                           Key.f3, Key.f5, Key.f10, Key.f11]:
                 key = self.listener.canonical(key)
             self.key_release_signal.emit(key)
 
         self.listener = Listener(on_press=on_press, on_release=on_release)
         self.listener.start()
-        self.video_thread = None
 
     @Slot(Key)
     def key_release(self, key):
         if self.state != 'playing' or self.ignore_key:
             return
-        if key in [KeyCode.from_char('q'), KeyCode.from_char('e'),
-                   KeyCode.from_char('w'), KeyCode.from_char('a'), KeyCode.from_char('s'), KeyCode.from_char('d'),
+        if key in [KeyCode.from_char('w'), KeyCode.from_char('a'), KeyCode.from_char('s'), KeyCode.from_char('d'),
                    *UIFunc.keymap.values(), Key.enter]:
             self.active_gamepad.release_playing(key)
 
@@ -141,8 +130,6 @@ class UIFunc(QMainWindow, Ui_UIView):
             else:
                 if self.state == 'playing':
                     self.label_5.setText('PLAY')
-                elif self.state == 'video':
-                    self.label_5.setText('VIDEO')
                 else:
                     self.label_5.clear()
             return
@@ -168,8 +155,7 @@ class UIFunc(QMainWindow, Ui_UIView):
                 self.active_gamepad = self.gamepad_list[3]
         elif key == KeyCode.from_char('r') and self.state in ['playing', 'input_recording']:
             self.reset()
-        elif key in [KeyCode.from_char('q'), KeyCode.from_char('e'),
-                     KeyCode.from_char('w'), KeyCode.from_char('a'), KeyCode.from_char('s'), KeyCode.from_char('d'),
+        elif key in [KeyCode.from_char('w'), KeyCode.from_char('a'), KeyCode.from_char('s'), KeyCode.from_char('d'),
                      *UIFunc.keymap.values(), Key.enter,
                      Key.alt_l] and self.state in ['playing', 'input_recording']:
             if self.state == 'input_recording':
@@ -264,27 +250,6 @@ class UIFunc(QMainWindow, Ui_UIView):
                     for label in label_list:
                         label.setStyleSheet('background-color: lightgray')
 
-        elif key == Key.f11 and self.state == 'video' and self.video_thread.video_stage == 0:
-            time.sleep(0.1)
-            self.video_thread.frame_cnt += 1
-            screenshot = ImageGrab.grab()
-            screenshot = cvtColor(np.array(screenshot), COLOR_RGB2BGR)
-            self.video_thread.video.write(screenshot)
-        elif key == Key.f1 and self.state in ['video', 'playing']:
-            if self.state == 'video':
-                if self.video_thread.video_stage == 0:
-                    self.video_thread.video_stage = 1
-                else:
-                    self.label_5.setText('PLAY')
-                    self.label_17.setText("FRAME 00000")
-                    self.state = 'playing'
-            elif os.path.exists(UIFunc.replay_file_path):
-                self.state = 'video'
-                self.label_5.setText('VIDEO')
-                self.video_thread = self.VideoThread(self, audio=False)
-                self.video_thread.signal.connect(self.replay_frame)
-                self.video_thread.start()
-
     @Slot(list)
     def replay_frame(self, rf):
         for j, rg in enumerate(rf):
@@ -292,105 +257,11 @@ class UIFunc(QMainWindow, Ui_UIView):
         self.record.append(rf)
         self.label_17.setText("FRAME {:05d}".format(len(self.record)))
 
-    class AudioThread(QThread):
-        def __init__(self, parent, path):
-            super().__init__()
-            self.parent = parent
-            self.path = path
-
-        def run(self):
-            with pyaudio.PyAudio() as p:
-                try:
-                    wasapi_info = p.get_host_api_info_by_type(pyaudio.paWASAPI)
-                except OSError:
-                    print("Looks like WASAPI is not available on the system. Exiting...")
-                    raise
-                default_speakers = p.get_device_info_by_index(wasapi_info["defaultOutputDevice"])
-                if not default_speakers["isLoopbackDevice"]:
-                    for loopback in p.get_loopback_device_info_generator():
-                        if default_speakers["name"] in loopback["name"]:
-                            default_speakers = loopback
-                            break
-                    else:
-                        print("Default loopback output device not found.")
-                        raise OSError
-                print(f"Recording from: ({default_speakers['index']}){default_speakers['name']}")
-                wave_file = wave.open(self.path+'.wav', 'wb')
-                wave_file.setnchannels(default_speakers["maxInputChannels"])
-                wave_file.setsampwidth(pyaudio.get_sample_size(pyaudio.paInt16))
-                wave_file.setframerate(int(default_speakers["defaultSampleRate"]))
-
-                def callback(in_data, frame_count, time_info, status):
-                    wave_file.writeframes(in_data)
-                    return in_data, pyaudio.paContinue
-
-                with p.open(format=pyaudio.paInt16,
-                            channels=default_speakers["maxInputChannels"],
-                            rate=int(default_speakers["defaultSampleRate"]),
-                            frames_per_buffer=pyaudio.get_sample_size(pyaudio.paInt16),
-                            input=True,
-                            input_device_index=default_speakers["index"],
-                            stream_callback=callback
-                            ) as stream:
-                    while self.parent.state == 'video':
-                        time.sleep(0.1)  # Blocking execution while playing
-
-                wave_file.close()
-
-    class VideoThread(QThread):
-        signal = Signal(list)
-
-        def __init__(self, parent, audio=False):
-            super().__init__()
-            with open(UIFunc.replay_file_path, 'r') as f:
-                record = json.load(f)
-                self.pickup_flag = record['pickup_flag']
-                self.record = record['state']
-            self.parent = parent
-            self.controller = Controller()
-            self.video_stage = 0
-            self.audio_thread = None
-            self.frame_cnt = 0
-            width, height = QApplication.desktop().width(), QApplication.desktop().height()
-            fourcc = VideoWriter_fourcc(*'mp4v')
-            path = 'D:\\TAS output\\output_' + time.strftime("%Y%m%d_%H%M%S", time.localtime())
-            self.video = VideoWriter(path+'.mp4', fourcc, 50, (width, height))
-            if audio:
-                self.audio_thread = UIFunc.AudioThread(parent, path)
-                self.audio_thread.start()
-
-        def run(self):
-            while self.video_stage == 0 and self.parent.state == 'video':
-                time.sleep(0.1)
-            time.sleep(0.5)
-            for i, rf in enumerate(self.record):
-                if self.parent.state != 'video':
-                    break
-                # self.signal.emit(rf)
-                # time.sleep(0.1)
-                self.controller.press(Key.f11)
-                self.controller.release(Key.f11)
-                self.frame_cnt += 1
-                # if self.frame_cnt % 5 == 1 and self.audio_thread:
-                #     time.sleep(0.5)
-                # else:
-                time.sleep(0.1)
-                if self.video:
-                    screenshot = ImageGrab.grab()
-                    screenshot = cvtColor(np.array(screenshot), COLOR_RGB2BGR)
-                    self.video.write(screenshot)
-
-            self.parent.state = 'playing'
-            self.parent.label_5.setText('PLAY')
-            self.parent.label_17.setText("FRAME 00000")
-            self.video.release()
-
     class Gamepad:
         def __init__(self, button_dict, parent):
             self.gamepad = vg.VX360Gamepad()
             self.button_dict = button_dict
             self.wasd_state = [False] * 4
-            self.q_state = [False] * 2
             self.parent = parent
 
         def press_recording(self, key):
@@ -414,12 +285,6 @@ class UIFunc(QMainWindow, Ui_UIView):
                 self.button_dict['Y'].setValue(self.button_dict['Y'].value() + 1.0)
             if key == KeyCode.from_char('s'):
                 self.button_dict['Y'].setValue(self.button_dict['Y'].value() - 1.0)
-            if key == KeyCode.from_char('q'):
-                self.button_dict['X'].setValue(UIFunc.q_coord[0][0])
-                self.button_dict['Y'].setValue(UIFunc.q_coord[0][1])
-            if key == KeyCode.from_char('e'):
-                self.button_dict['X'].setValue(UIFunc.q_coord[1][0])
-                self.button_dict['Y'].setValue(UIFunc.q_coord[1][1])
             self.update()
 
         def press_playing(self, key):
@@ -439,19 +304,8 @@ class UIFunc(QMainWindow, Ui_UIView):
                 self.wasd_state[0] = True
             if key == KeyCode.from_char('s'):
                 self.wasd_state[2] = True
-            if key == KeyCode.from_char('q'):
-                self.q_state[0] = True
-            if key == KeyCode.from_char('e'):
-                self.q_state[1] = True
-            if self.q_state[0]:
-                self.button_dict['X'].setValue(UIFunc.q_coord[0][0])
-                self.button_dict['Y'].setValue(UIFunc.q_coord[0][1])
-            elif self.q_state[1]:
-                self.button_dict['X'].setValue(UIFunc.q_coord[1][0])
-                self.button_dict['Y'].setValue(UIFunc.q_coord[1][1])
-            else:
-                self.button_dict['X'].setValue(self.wasd_state[1] * -1.0 + self.wasd_state[3] * 1.0)
-                self.button_dict['Y'].setValue(self.wasd_state[2] * -1.0 + self.wasd_state[0] * 1.0)
+            self.button_dict['X'].setValue(self.wasd_state[1] * -1.0 + self.wasd_state[3] * 1.0)
+            self.button_dict['Y'].setValue(self.wasd_state[2] * -1.0 + self.wasd_state[0] * 1.0)
             self.update()
 
         def release_playing(self, key):
@@ -471,19 +325,8 @@ class UIFunc(QMainWindow, Ui_UIView):
                 self.wasd_state[0] = False
             if key == KeyCode.from_char('s'):
                 self.wasd_state[2] = False
-            if key == KeyCode.from_char('q'):
-                self.q_state[0] = False
-            if key == KeyCode.from_char('e'):
-                self.q_state[1] = False
-            if self.q_state[0]:
-                self.button_dict['X'].setValue(UIFunc.q_coord[0][0])
-                self.button_dict['Y'].setValue(UIFunc.q_coord[0][1])
-            elif self.q_state[1]:
-                self.button_dict['X'].setValue(UIFunc.q_coord[1][0])
-                self.button_dict['Y'].setValue(UIFunc.q_coord[1][1])
-            else:
-                self.button_dict['X'].setValue(self.wasd_state[1] * -1.0 + self.wasd_state[3] * 1.0)
-                self.button_dict['Y'].setValue(self.wasd_state[2] * -1.0 + self.wasd_state[0] * 1.0)
+            self.button_dict['X'].setValue(self.wasd_state[1] * -1.0 + self.wasd_state[3] * 1.0)
+            self.button_dict['Y'].setValue(self.wasd_state[2] * -1.0 + self.wasd_state[0] * 1.0)
             self.update()
 
         def update(self):
@@ -535,7 +378,7 @@ class UIFunc(QMainWindow, Ui_UIView):
                     state[j][0] = None
             save_record.append(state)
             save_record += self.cached_record
-        path = 'records/record_' + time.strftime("%Y%m%d_%H%M%S_", time.localtime()) + \
+        path = './records/record_' + time.strftime("%Y%m%d_%H%M%S_", time.localtime()) + \
                str(len(save_record)) + 'f.json'
         with open(path, 'w') as f:
             f.write('{\n')
@@ -582,7 +425,6 @@ class UIFunc(QMainWindow, Ui_UIView):
             widget.setValue(0.0)
         for gamepad in self.gamepad_list:
             gamepad.wasd_state = [False] * 4
-            gamepad.q_state = [False] * 2
             gamepad.update()
 
 
