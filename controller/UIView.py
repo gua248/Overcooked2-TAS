@@ -357,7 +357,7 @@ class Ui_UIView(object):
         self.label_17.setFont(font4)
         self.groupBox_3 = QGroupBox(self.centralwidget)
         self.groupBox_3.setObjectName(u"groupBox_3")
-        self.groupBox_3.setGeometry(QRect(10, 10, 12, 191))
+        self.groupBox_3.setGeometry(QRect(9, 19, 12, 191))
         self.groupBox_3.setStyleSheet(u"border: none")
         self.gridLayout_3 = QGridLayout(self.groupBox_3)
         self.gridLayout_3.setSpacing(0)

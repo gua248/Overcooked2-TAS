@@ -191,9 +191,12 @@ namespace OC2TAS
             if (frozen) ToggleFreeze();
             replayFrameCount = 0;
             replayState = ReplayState.Init;
-            video = false;
-            if (videoRecorder != null)
+            if (video)
+            {
+                TASPlugin.audioRecorder.EndRecord();
                 videoRecorder.Close();
+            }
+            video = false;
             bindUIEmoteAt = -1;
             playerControls = new PlayerControls[4];
         }
@@ -391,8 +394,11 @@ namespace OC2TAS
         public void OnDestroy() 
         { 
             if (frozen) ToggleFreeze();
-            if (videoRecorder != null)
+            if (video)
+            {
+                TASPlugin.audioRecorder.EndRecord();
                 videoRecorder.Close();
+            }
         }
 
         public void OnGUI()
@@ -780,9 +786,11 @@ namespace OC2TAS
             Time.timeScale = 0f;
             AudioListener.pause = false;
             replayPeriod = 2;
-            TASPlugin.audioRecorder.EndRecord();
-            if (videoRecorder != null)
+            if (video)
+            {
+                TASPlugin.audioRecorder.EndRecord();
                 videoRecorder.Close();
+            }
             video = false;
         }
 
