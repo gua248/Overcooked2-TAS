@@ -192,6 +192,11 @@ where each position correction instruction is composed of `[object name, frame p
 
   It is possible to immediately interact with an item that has undergone a state change in the previous frame, e.g. picking up an ingredient that has just been chopped, plating the food in a pot that has just been cooked, or placing an ingredient that has just been caught from a throw.
 
+- Avoid operations that contain ambiguities, including but not limited to:
+
+  - 180-degree turns, such as inputting direction (-1.0, -1.0) for a Player facing (1.0, 1.0) (up against down and left against right do not have this ambiguity)
+  - Placing or picking up at the division of two counters, e.g. on the center vertical line of two side-by-side tables, or at the corner of right-angled tables and facing 45 degrees
+
 - For final video recording, please continue recording the script after the end of the level until the desired video end time.
 
 
