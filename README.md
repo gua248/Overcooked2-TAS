@@ -25,6 +25,7 @@ Copy `plugin/bin/Release/OC2TAS.dll` and `ffmpeg.exe` to the game's `BepInEx/plu
 
 - Press `F9` to pause/resume the game, while paused, press `F11` to step to the next frame.
 - Press `F10` to replay the `replay.json` script in the same directory (`BepInEx/plugins/`). The game will be paused at the end of the replay. You can press `F10` to abort the replay. The time required for replay depends on the performance of your computer and does not match the real time.
+- Press `F8` multiple times to show various debug information.
 - Press `F1` to record video with `replay.json` script in the same directory, the output directory is `D:/TAS output/`. You can press `F1` to abort the recording. The recording takes a long time due to the audio and video encoding.
 
 #### Compiling

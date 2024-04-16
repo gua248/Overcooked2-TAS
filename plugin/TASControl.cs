@@ -12,33 +12,31 @@ namespace OC2TAS
 {
     public class TASControl
     {
-        private readonly KeyCode freezeToggleKey;
-        private readonly KeyCode nextFrameKey;
-        private readonly KeyCode replayKey;
-        private readonly KeyCode videoKey;
-        private readonly KeyCode GUIKey;
+        KeyCode freezeToggleKey;
+        KeyCode nextFrameKey;
+        KeyCode replayKey;
+        KeyCode videoKey;
         private bool frozen;
         public ReplayState replayState;
-        private int replayFrameCount;
-        private int replayPeriod = 2;
+        public int replayFrameCount;
+        public int replayPeriod = 2;
         private bool video;
         private VideoRecorder videoRecorder;
+        private AudioRecorder audioRecorder;
         private int bindUIEmoteAt;
-        private bool enableGUI;
-
         private float audioResumeTime;
 
         public TASScript script;
         private GamepadState[] last_state;
-        private readonly GUIStyle guiStyle;
+        private GUIStyle guiStyle;
 
-        private PlayerControls[] playerControls;
-        private TASControlScheme[] tasControlSchemes;
-        private ClientEmoteWheel[] emoteWheels;
-        private ClientEmoteWheel[] UIemoteWheels;
-        private ServerSessionInteractable[] serverSessionInteractables;
-        private MultiplayerController multiplayerController;
-        private Animator[] animators;
+        PlayerControls[] playerControls;
+        TASControlScheme[] tasControlSchemes;
+        ClientEmoteWheel[] emoteWheels;
+        ClientEmoteWheel[] UIemoteWheels;
+        ServerSessionInteractable[] serverSessionInteractables;
+        MultiplayerController multiplayerController;
+        Animator[] animators;
 
         public enum ReplayState
         {
@@ -68,6 +66,7 @@ namespace OC2TAS
                 this.y = y;
             }
         }
+
         public class TASControlScheme
         {
             public TASLogicalButton useButton;
@@ -84,6 +83,7 @@ namespace OC2TAS
             public TASLogicalValue UIemoteXValue;
             public TASLogicalValue UIemoteYValue;
         }
+
         public class PositionCorrection
         {
             public string objectName;
@@ -168,32 +168,25 @@ namespace OC2TAS
             freezeToggleKey = KeyCode.F9;
             replayKey = KeyCode.F10;
             nextFrameKey = KeyCode.F11;
-            GUIKey = KeyCode.F8;
             videoKey = KeyCode.F1;
             playerControls = new PlayerControls[4];
             emoteWheels = new ClientEmoteWheel[4];
             UIemoteWheels = new ClientEmoteWheel[4];
             bindUIEmoteAt = -1;
             replayState = ReplayState.Init;
-
-            Texture2D consoleBackground = new Texture2D(1, 1, TextureFormat.RGBAFloat, false);
-            consoleBackground.SetPixel(0, 0, new Color(1, 1, 1, 0.4f));
-            consoleBackground.Apply();
-            guiStyle = new GUIStyle(GUIStyle.none);
-            guiStyle.fontSize = 32;
-            guiStyle.normal.textColor = Color.black;
-            guiStyle.fontStyle = FontStyle.Bold;
-            guiStyle.normal.background = consoleBackground;
         }
 
         public void OnSceneLoaded()
         {
+            AudioListener audioListener = GameObject.FindObjectOfType<AudioListener>();
+            if (audioListener != null && audioListener.gameObject.GetComponent<AudioRecorder>() == null)
+                audioRecorder = audioListener.gameObject.AddComponent<AudioRecorder>();
             if (frozen) ToggleFreeze();
             replayFrameCount = 0;
             replayState = ReplayState.Init;
             if (video)
             {
-                TASPlugin.audioRecorder.EndRecord();
+                audioRecorder.EndRecord();
                 videoRecorder.Close();
             }
             video = false;
@@ -203,18 +196,14 @@ namespace OC2TAS
 
         public void LateUpdate()
         {
-            if (Input.GetKeyDown(GUIKey))
-                enableGUI = !enableGUI;
-
             if (video && (replayState == ReplayState.InIntro || replayState == ReplayState.InLevel))
             {
                 if (replayFrameCount % replayPeriod == 0)
                 {
                     audioResumeTime += 0.02f;
-                    if (videoRecorder != null)
-                        videoRecorder.AddFrame();
+                    videoRecorder?.AddFrame();
                 }
-                AudioListener.pause = TASPlugin.audioRecorder.totalTime > audioResumeTime;
+                AudioListener.pause = audioRecorder.totalTime > audioResumeTime;
             }
 
             if ((Input.GetKeyDown(replayKey) || Input.GetKeyDown(videoKey)) && 
@@ -224,7 +213,7 @@ namespace OC2TAS
                 EndReplay();
                 replayState = ReplayState.Over;
                 ToggleFreeze();  // unfreeze
-                TASPlugin.pluginInstance.Log("Replay aborted");
+                TASPlugin.Log("Replay aborted");
                 return;
             }
 
@@ -249,18 +238,20 @@ namespace OC2TAS
 
             if (replayState == ReplayState.InLevel)
             {
+                //if (FrameWarper.Warp(this)) return;
+
                 if (replayFrameCount / replayPeriod >= script.gamepadStates.GetLength(0))
                 {
                     EndReplay();
                     replayState = script.includeNull ? ReplayState.FirstFrameAfterReplay : ReplayState.Over;
-                    TASPlugin.pluginInstance.Log("Replay ended");
+                    TASPlugin.Log("Replay ended");
                     return;
                 }
 
                 if (replayFrameCount % replayPeriod == 0)
                 {
                     if (replayFrameCount == replayPeriod * bindUIEmoteAt)
-                        TryBindUIEmote();
+                        BindUIEmote();
                     multiplayerController.LateUpdate();
                     GamepadState[] state = new GamepadState[4];
                     for (int i = 0; i < 4; i++)
@@ -332,12 +323,14 @@ namespace OC2TAS
                     multiplayerController.Update();
                     multiplayerController.LateUpdate();
 
+                    // do not use ?. on UnityEngine.Object
                     foreach (Animator animator in animators)
                         if (animator != null)
                             animator.Update(0f);
 
                     Time.timeScale = 1f;
                 }
+
                 if (replayFrameCount % replayPeriod == 1)
                 {
                     Time.timeScale = 0f;
@@ -359,8 +352,8 @@ namespace OC2TAS
                                 if (Vector3.Distance(position, position_new) > 0.0002)
                                 {
                                     gameObject.transform.position = position_new;
-                                    TASPlugin.pluginInstance.Log(String.Format("position correction at frame {0}, {1}", pc.frame, pc.objectName));
-                                    TASPlugin.pluginInstance.Log(String.Format("  ({0:F4}, {1:F4}, {2:F4}) -> ({3:F4}, {4:F4}, {5:F4})", position.x, position.y, position.z, position_new.x, position_new.y, position_new.z));
+                                    TASPlugin.Log(string.Format("position correction at frame {0}, {1}", pc.frame, pc.objectName));
+                                    TASPlugin.Log(string.Format("  ({0:F4}, {1:F4}, {2:F4}) -> ({3:F4}, {4:F4}, {5:F4})", position.x, position.y, position.z, position_new.x, position_new.y, position_new.z));
                                 }
                             }
                         }
@@ -396,41 +389,35 @@ namespace OC2TAS
             if (frozen) ToggleFreeze();
             if (video)
             {
-                TASPlugin.audioRecorder.EndRecord();
+                audioRecorder.EndRecord();
                 videoRecorder.Close();
             }
         }
 
         public void OnGUI()
         {
-            if (!enableGUI) return;
-            string[] message = new string[4];
-            for (int i = 0; i < 4; ++i)
+            if (guiStyle == null)
             {
-                Vector3 position = (playerControls[i] == null) ? Vector3.zero : playerControls[i].transform.position;
-                message[i] = String.Format("P{0}, {1,10:F4}, {2,10:F4}, {3,10:F4}", i+1, position.x, position.y, position.z);
+                Texture2D consoleBackground = new Texture2D(1, 1, TextureFormat.RGBAFloat, false);
+                consoleBackground.SetPixel(0, 0, new Color(1, 1, 1, 0.4f));
+                consoleBackground.Apply();
+                guiStyle = new GUIStyle(GUIStyle.none);
+                guiStyle.normal.textColor = Color.black;
+                guiStyle.normal.background = consoleBackground;
+                guiStyle.fontStyle = FontStyle.Bold;
+                guiStyle.fontSize = 28;
+                guiStyle.alignment = TextAnchor.UpperRight;
+                guiStyle.padding = new RectOffset(5, 5, 5, 5);
             }
-            GUI.Label(
-                new Rect(700, 20, 550, 200),
-                String.Format(
-                    "  Frame {0}\n  {1}\n  {2}\n  {3}\n  {4}",
-                    replayState == ReplayState.InIntro ? 0 : replayFrameCount / replayPeriod, message[0], message[1], message[2], message[3]),
-                guiStyle);
-            //if (replayFrameCount / replayPeriod >= 8890 && replayFrameCount / replayPeriod <= 8920)
-            //{
-            //    GameObject gameObject = GameObject.Find("equipment_glass_01(Clone)_Rigidbody");
-            //    if (gameObject != null)
-            //    {
-            //        GUI.Label(
-            //            new Rect(700, 300, 550, 50),
-            //            String.Format(
-            //                "  {0,10:F4}, {1,10:F4}, {2,10:F4}",
-            //                gameObject.transform.position.x,
-            //                gameObject.transform.position.y,
-            //                gameObject.transform.position.z),
-            //            guiStyle);
-            //    }
-            //}
+
+            if (DebugItemOverlay.debugType == DebugItemOverlay.DebugType.None) return;
+            int frame = replayState == ReplayState.InIntro ? 0 : replayFrameCount / replayPeriod;
+            string content = 
+                $"TAS Plugin v{TASPlugin.PLUGIN_VERSION}\n" +
+                $"Frame {frame:D5}";
+            var guiContent = new GUIContent(content);
+            var labelSize = guiStyle.CalcSize(guiContent);
+            GUI.Label(new Rect(Screen.width - labelSize.x, Screen.height / 3, labelSize.x, labelSize.y), guiContent, guiStyle);
         }
 
         private static void CreateEmptyScript()
@@ -438,7 +425,7 @@ namespace OC2TAS
             string dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             string path = dir + "\\replay.json";
             LevelConfigBase kitchenLevelConfigBase = GameUtils.GetLevelConfig();
-            string content = String.Format("{{\n" +
+            string content = string.Format("{{\n" +
                 "  \"author\": \"\",\n" +
                 "  \"level\": \"{0}\",\n" +
                 "  \"menu\": [],\n" +
@@ -451,7 +438,7 @@ namespace OC2TAS
                 "      [null, false, false, false, 0.0, 0.0]\n" +
                 "    ]\n  ]\n}}", kitchenLevelConfigBase.name);
             File.WriteAllText(path, content);
-            TASPlugin.pluginInstance.Log(String.Format("Empty script created for \"{0}\"", kitchenLevelConfigBase.name));
+            TASPlugin.Log(string.Format("Empty script created for \"{0}\"", kitchenLevelConfigBase.name));
         }
 
         private static TASScript ParseScript()
@@ -544,7 +531,7 @@ namespace OC2TAS
             }
             catch (Exception ex)
             {
-                TASPlugin.pluginInstance.Log(ex.ToString());
+                TASPlugin.Log(ex.ToString());
                 return null;
             }
         }
@@ -632,7 +619,7 @@ namespace OC2TAS
             LevelConfigBase kitchenLevelConfigBase = GameUtils.GetLevelConfig();
             if (!kitchenLevelConfigBase.name.Equals(script.level))
             {
-                TASPlugin.pluginInstance.Log(String.Format("Level mismatch: \"{0}\"", kitchenLevelConfigBase.name));
+                TASPlugin.Log(string.Format("Level mismatch: \"{0}\"", kitchenLevelConfigBase.name));
                 return false;
             }
 
@@ -656,13 +643,13 @@ namespace OC2TAS
             }
             if (playerControls[0] == null)
             {
-                TASPlugin.pluginInstance.Log("No player found");
+                TASPlugin.Log("No player found");
                 return false;
             }
 
             if (!UserSystemUtils.AreAllUsersInGameState(ServerUserSystem.m_Users, GameState.RunLevelIntro))
             {
-                TASPlugin.pluginInstance.Log("StartReplay at wrong gamestate");
+                TASPlugin.Log("StartReplay at wrong gamestate");
                 return false;
             }
 
@@ -704,27 +691,27 @@ namespace OC2TAS
             if (video)
             {
                 this.video = true;
-                videoRecorder = new VideoRecorder();
                 replayPeriod = 5;
-                TASPlugin.audioRecorder.StartRecord();
+                videoRecorder = new VideoRecorder();
+                audioRecorder.StartRecord();
                 audioResumeTime = 0f;
-                TASPlugin.pluginInstance.Log(String.Format("Replay (video) script for level \"{0}\"", script.level));
+                TASPlugin.Log(string.Format("Replay (video) script for level \"{0}\"", script.level));
             }
             else
             { 
                 AudioListener.pause = false;
-                TASPlugin.pluginInstance.Log(String.Format("Replay script for level \"{0}\"", script.level));
+                TASPlugin.Log(string.Format("Replay script for level \"{0}\"", script.level));
             }
 
             return true;
         }
 
-        public void BindUIEmote()
+        public void BindUIEmoteAtNextFrame()
         {
             bindUIEmoteAt = replayFrameCount / replayPeriod + 1;
         }
 
-        private void TryBindUIEmote()
+        private void BindUIEmote()
         {
             GameObject parent = GameObject.Find("UIPlayers");
             if (parent == null) return;
@@ -788,7 +775,7 @@ namespace OC2TAS
             replayPeriod = 2;
             if (video)
             {
-                TASPlugin.audioRecorder.EndRecord();
+                audioRecorder.EndRecord();
                 videoRecorder.Close();
             }
             video = false;
@@ -799,7 +786,7 @@ namespace OC2TAS
             frozen = !frozen;
             if (frozen)
             {
-                TASPlugin.pluginInstance.Log("Freezing");
+                TASPlugin.Log("Freezing");
                 Time.timeScale = 0f;
                 Time.captureFramerate = 50;
                 if (replayState == ReplayState.Init)
@@ -807,7 +794,7 @@ namespace OC2TAS
             }
             else
             {
-                TASPlugin.pluginInstance.Log("Unfreezing");
+                TASPlugin.Log("Unfreezing");
                 Time.timeScale = 1f;
                 Time.captureFramerate = 0;
                 AudioListener.pause = false;

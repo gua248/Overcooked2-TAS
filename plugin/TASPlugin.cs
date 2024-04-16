@@ -1,19 +1,20 @@
 ﻿using BepInEx;
 using HarmonyLib;
 using System;
-using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace OC2TAS
 {
-    [BepInPlugin("dev.gua.overcooked.tas", "Overcooked2 TAS Plugin", "1.0")]
+    [BepInPlugin(PLUGIN_GUID, PLUGIN_NAME, PLUGIN_VERSION)]
     [BepInProcess("Overcooked2.exe")]
     public class TASPlugin : BaseUnityPlugin
     {
+        public const string PLUGIN_GUID = "dev.gua.overcooked.tas";
+        public const string PLUGIN_NAME = "Overcooked2 TAS Plugin";
+        public const string PLUGIN_VERSION = "1.1";
         public static TASPlugin pluginInstance;
         public static TASControl tasControl;
         private static Harmony patcher;
-        public static AudioRecorder audioRecorder;
 
         public void Awake()
         {
@@ -24,34 +25,35 @@ namespace OC2TAS
             patcher.PatchAll(typeof(MenuPatch));
             foreach (var patched in Harmony.GetAllPatchedMethods())
                 Console.WriteLine("Patched: " + patched.FullDescription());
+            SceneManager.sceneLoaded += OnSceneLoaded;
 
             tasControl = new TASControl();
-            SceneManager.sceneLoaded += OnSceneLoaded;
+            DebugItemOverlay.Awake();
         }
 
         public void LateUpdate()
         {
             tasControl.LateUpdate();
+            DebugItemOverlay.LateUpdate();
         }
 
         public void OnGUI()
         {
             tasControl.OnGUI();
+            DebugItemOverlay.OnGUI();
         }
+
         public void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
             tasControl.OnSceneLoaded();
-            AudioListener audioListener = GameObject.FindObjectOfType<AudioListener>();
-            if (audioListener != null)
-                if (audioListener.gameObject.GetComponent<AudioRecorder>() == null)
-                    audioRecorder = audioListener.gameObject.AddComponent<AudioRecorder>();
         }
 
         public void OnDestroy()
         {
             tasControl.OnDestroy();
+            DebugItemOverlay.Destroy();
         }
 
-        public void Log(String msg) { this.Logger.LogInfo(msg); }
+        public static void Log(string msg) { pluginInstance.Logger.LogInfo(msg); }
     }
 }

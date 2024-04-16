@@ -5,6 +5,7 @@ using System.Reflection.Emit;
 using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
+using OC2TAS.Extension;
 
 namespace OC2TAS
 {
@@ -36,7 +37,7 @@ namespace OC2TAS
         [HarmonyPatch(typeof(ClientWorkstation), "StartSynchronising")]
         public static void ClientWorkstationStartSynchronisingPatch(ClientWorkstation __instance)
         {
-            ParticleSystem m_chopPFXInstance = (ParticleSystem)Traverse.Create(__instance).Field("m_chopPFXInstance").GetValue();
+            ParticleSystem m_chopPFXInstance = __instance.get_m_chopPFXInstance();
             if (m_chopPFXInstance != null)
             {
                 ParticleSystem.MainModule mainModule = m_chopPFXInstance.main;
@@ -164,11 +165,11 @@ namespace OC2TAS
 
     public static class UIPatch
     { 
-        [HarmonyPostfix]
+        [HarmonyPrefix]
         [HarmonyPatch(typeof(ClientHeatedStationGUI), "StartSynchronising")]
-        public static void ClientHeatedStationGUIStartSynchronisingPatch(ClientHeatedStationGUI __instance)
+        public static void ClientHeatedStationGUIStartSynchronisingPatch(Component synchronisedObject)
         {
-            HeatedStationGUI heatedStationGUI = (HeatedStationGUI)Traverse.Create(__instance).Field("m_heatedStationGUI").GetValue();
+            HeatedStationGUI heatedStationGUI = synchronisedObject as HeatedStationGUI;
             heatedStationGUI.m_Offset = heatedStationGUI.m_Offset.AddY(2f);
         }
 
@@ -177,7 +178,7 @@ namespace OC2TAS
         public static void UIPlayerRootMenuStartPatch()
         {
             if (TASPlugin.tasControl.replayState == TASControl.ReplayState.InLevel)
-                TASPlugin.tasControl.BindUIEmote();
+                TASPlugin.tasControl.BindUIEmoteAtNextFrame();
         }
     }
 
