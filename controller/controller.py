@@ -26,7 +26,7 @@ class UIFunc(QMainWindow, Ui_UIView):
         super(UIFunc, self).__init__()
         self.app = app
         self.setupUi(self)
-        self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
+        self.setWindowFlags(Qt.WindowStaysOnTopHint)
         self.label.setStyleSheet('background-color: rgb(135,206,235)')
         self.label_3.setStyleSheet('background-color: rgb(255,99,71)')
         self.label_2.setStyleSheet('background-color: rgb(0,201,87)')
@@ -39,7 +39,8 @@ class UIFunc(QMainWindow, Ui_UIView):
 
         self.setStyleSheet('QPushButton:checked {background-color: forestgreen;}')
         self.label_5.setStyleSheet('color:brown')
-        self.move(QApplication.desktop().width()-self.width(), 0)
+        self.move(app.primaryScreen().availableGeometry().right() - self.width(),
+                  app.primaryScreen().availableGeometry().top())
 
         for widget in self.findChildren(QPushButton):
             widget.clicked.connect(self.on_change)
@@ -171,10 +172,10 @@ class UIFunc(QMainWindow, Ui_UIView):
                 self.first_frame_cached = False
                 self.reset()
                 self.label_5.setText('PLAY')
-                self.label_17.setText("FRAME 00000")
+                self.label_17.setText("FRAME 00000 ")
                 label_list = [self.label_18, self.label_19, self.label_20, self.label_21]
                 for label in label_list:
-                    label.setStyleSheet('background-color: lightgray')
+                    label.setStyleSheet('background-color: none')
                 self.state = 'playing'
             else:
                 self.label_5.clear()
@@ -206,7 +207,7 @@ class UIFunc(QMainWindow, Ui_UIView):
                             break
                     else:
                         self.record = record
-                    self.label_17.setText("FRAME {:05d}".format(len(self.record)))
+                    self.label_17.setText("FRAME {:05d} ".format(len(self.record)))
                     self.label_5.clear()
                     self.pushButton.setText("{:05d}".format(pickup_flag[0]))
                     self.pushButton_2.setText("{:05d}".format(pickup_flag[1]))
@@ -227,6 +228,8 @@ class UIFunc(QMainWindow, Ui_UIView):
                     for j in range(4):
                         if self.cached_flag[j]:
                             label_list[j].setStyleSheet('background-color: green')
+                        else:
+                            label_list[j].setStyleSheet('background-color: lightgray')
                     self.state = 'input_recording'
 
         elif key == Key.f11 and self.state == 'input_recording':
@@ -234,7 +237,7 @@ class UIFunc(QMainWindow, Ui_UIView):
                 state = [gamepad.get_state() for gamepad in self.gamepad_list]
                 self.record.append(state)
             self.label_5.clear()
-            self.label_17.setText("FRAME {:05d}".format(len(self.record)))
+            self.label_17.setText("FRAME {:05d} ".format(len(self.record)))
             self.first_frame_cached = False
             if self.cached_record:
                 time.sleep(0.3)
@@ -255,7 +258,7 @@ class UIFunc(QMainWindow, Ui_UIView):
         for j, rg in enumerate(rf):
             self.gamepad_list[j].set_state(rg)
         self.record.append(rf)
-        self.label_17.setText("FRAME {:05d}".format(len(self.record)))
+        self.label_17.setText("FRAME {:05d} ".format(len(self.record)))
 
     class Gamepad:
         def __init__(self, button_dict, parent):
