@@ -90,6 +90,7 @@ class UIFunc(QMainWindow, Ui_UIView):
         self.level = ""
         self.menu = []
         self.position_correction = []
+        self.rng_assigner = []
         self.state = 'playing'  # in ['playing', 'input_recording']
         self.label_5.setText('PLAY')
 
@@ -193,6 +194,7 @@ class UIFunc(QMainWindow, Ui_UIView):
                     self.position_correction = record['position_correction'] \
                         if 'position_correction' in record.keys() else []
                     self.position_correction.sort(key=lambda x: x[1])
+                    self.rng_assigner = record['rng'] if 'rng' in record.keys() else []
                     record = record['state']
                     for i, rf in enumerate(record):
                         flag = [True] * 4
@@ -388,6 +390,16 @@ class UIFunc(QMainWindow, Ui_UIView):
             f.write('  \"author\": \"{}\",\n'.format(UIFunc.author))
             f.write('  \"level\": \"{}\",\n'.format(self.level))
             f.write('  \"menu\": {},\n'.format(self.menu))
+            if not self.rng_assigner:
+                f.write('  \"rng\": [],\n')
+            else:
+                f.write('  \"rng\": \n')
+                f.write('  [\n')
+                for rng in self.rng_assigner:
+                    f.write('    [\"{}\", {}]'.format(*rng))
+                    f.write('\n' if rng is self.rng_assigner[-1] else ',\n')
+                f.write('  ],\n')
+
             f.write('  \"pickup_flag\": [{},{},{},{}],\n'.format(
                 int(self.pushButton.text()),
                 int(self.pushButton_2.text()),
@@ -400,11 +412,8 @@ class UIFunc(QMainWindow, Ui_UIView):
                 f.write('  \"position_correction\": \n')
                 f.write('  [\n')
                 for pc in self.position_correction:
-                    if len(pc) == 5:
-                        f.write('    [\"{}\", {}, {:.4f}, {:.4f}, {:.4f}]'.format(*pc))
-                    elif len(pc) == 6:
-                        f.write('    [\"{}\", {}, {:.4f}, {:.4f}, {:.4f}'.format(*pc[:5])
-                                + ', {}]'.format(pc[5]).lower())
+                    if len(pc) >= 5:
+                        f.write('    [\"{}\", {}, {:.4f}, {:.4f}, {:.4f}]'.format(*pc[:5]))
                     else:
                         f.write('    [\"Error\", -1, 0.0, 0.0, 0.0]')
                     f.write('\n' if pc is self.position_correction[-1] else ',\n')

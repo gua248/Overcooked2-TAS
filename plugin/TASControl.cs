@@ -96,6 +96,19 @@ namespace OC2TAS
                 this.position = position;
             }
         }
+
+        public class RNGAssigner
+        {
+            public string objectName;
+            public string number;
+            public RNGAssigner(string name, string number)
+            {
+                
+                this.objectName = name;
+                this.number = number;
+            }
+        }
+
         public class TASScript
         {
             public string level;
@@ -103,6 +116,7 @@ namespace OC2TAS
             public GamepadState[,] gamepadStates;
             public bool includeNull;
             public string author;
+            public RNGAssigner[] rngAssigners;
             public PositionCorrection[] positionCorrections;
         }
 
@@ -325,7 +339,7 @@ namespace OC2TAS
 
                     // do not use ?. on UnityEngine.Object
                     foreach (Animator animator in animators)
-                        if (animator != null)
+                        if (animator != null && animator.isActiveAndEnabled)
                             animator.Update(0f);
 
                     Time.timeScale = 1f;
@@ -429,7 +443,9 @@ namespace OC2TAS
                 "  \"author\": \"\",\n" +
                 "  \"level\": \"{0}\",\n" +
                 "  \"menu\": [],\n" +
+                "  \"rng\": [],\n" +
                 "  \"pickup_flag\": [0,0,0,0],\n" +
+                "  \"position_correction\": [],\n" +
                 "  \"state\": \n  [\n" +
                 "    [\n" +
                 "      [null, false, false, false, 0.0, 0.0],\n" +
@@ -510,11 +526,26 @@ namespace OC2TAS
                 }
                 else 
                     script.gamepadStates = gamepadStates;
-
-                Match m = Regex.Match(jsonString, @"""position_correction""\s*:\s*\[\s*\[(.*?)]\s*,?\s*]", RegexOptions.Singleline);
-                if (m.Success)
+                
+                Match m1 = Regex.Match(jsonString, @"""rng""\s*:\s*\[\s*\[(.*?)]\s*,?\s*]", RegexOptions.Singleline);
+                if (m1.Success)
                 {
-                    string[] s6 = Regex.Split(m.Groups[1].Value, @"]\s*,\s*\[");
+                    string[] s6 = Regex.Split(m1.Groups[1].Value, @"]\s*,\s*\[");
+                    script.rngAssigners = new RNGAssigner[s6.Length];
+                    for (int i = 0; i < s6.Length; ++i)
+                    {
+                        string[] s7 = s6[i].Split(',');
+                        script.rngAssigners[i] = new RNGAssigner(
+                            Regex.Match(s7[0], @"""(.*)""").Groups[1].Value, s7[1]
+                        );
+                    }
+                }
+                else script.rngAssigners = null;
+
+                Match m2 = Regex.Match(jsonString, @"""position_correction""\s*:\s*\[\s*\[(.*?)]\s*,?\s*]", RegexOptions.Singleline);
+                if (m2.Success)
+                {
+                    string[] s6 = Regex.Split(m2.Groups[1].Value, @"]\s*,\s*\[");
                     script.positionCorrections = new PositionCorrection[s6.Length];
                     for (int i = 0; i < s6.Length; ++i)
                     {
@@ -701,6 +732,81 @@ namespace OC2TAS
             { 
                 AudioListener.pause = false;
                 TASPlugin.Log(string.Format("Replay script for level \"{0}\"", script.level));
+            }
+
+            foreach (var rng in script.rngAssigners)
+            {
+                var obj = GameObject.Find(rng.objectName);
+                var serverSetVariable = obj?.GetComponent<ServerTriggerAnimatorSetVariable>();
+                var serverProjectileSpawner = obj?.GetComponent<ServerProjectileSpawner>();
+
+                if (serverSetVariable != null)
+                {
+                    var m_data = serverSetVariable.get_m_data();
+                    var setVariable = serverSetVariable.get_m_triggerAnimatorVariable();
+                    if (!setVariable.m_randomValue)
+                    {
+                        TASPlugin.Log(string.Format("RNG object \"{0}\" is not random", rng.objectName));
+                        continue;
+                    }
+                    AnimatorVariableType variableType = setVariable.m_variableType;
+                    if (variableType == AnimatorVariableType.Bool)
+                        m_data.m_randomValue = bool.Parse(rng.number);
+                    if (variableType == AnimatorVariableType.Float)
+                    {
+                        float number = float.Parse(rng.number);
+                        if (number > setVariable.m_maxFloatValue || number < setVariable.m_minFloatValue)
+                        {
+                            TASPlugin.Log(string.Format(
+                                "RNG object \"{0}\" value {1} out of range [{2}, {3}]",
+                                rng.objectName, number, setVariable.m_minFloatValue, setVariable.m_maxFloatValue));
+                            continue;
+                        }
+                        m_data.m_randomValue = number;
+                    }
+                    if (variableType == AnimatorVariableType.Int)
+                    {
+                        int number = int.Parse(rng.number);
+                        if (number >= setVariable.m_maxIntValue || number < setVariable.m_minIntValue)
+                        {
+                            TASPlugin.Log(string.Format(
+                                "RNG object \"{0}\" value {1} out of range [{2}, {3})",
+                                rng.objectName, number, setVariable.m_minIntValue, setVariable.m_maxIntValue));
+                            continue;
+                        }
+                        m_data.m_randomValue = number;
+                    }
+                    serverSetVariable.SendServerEvent(m_data);
+                }
+                else if (serverProjectileSpawner != null)
+                {
+                    var projectileSpawner = serverProjectileSpawner.get_m_spawner();
+                    if (!projectileSpawner.m_randomTargetOrder)
+                    {
+                        TASPlugin.Log(string.Format("RNG object \"{0}\" is not random", rng.objectName));
+                        continue;
+                    }
+                    int number = int.Parse(rng.number);
+                    bool useT = projectileSpawner.m_transformTargetPositions.Length > 0;
+                    int range = useT ? projectileSpawner.m_transformTargetPositions.Length : projectileSpawner.m_targetPositions.Length;
+                    if (number >= range)
+                    {
+                        TASPlugin.Log(string.Format(
+                            "RNG object \"{0}\" value {1} out of range [{2}, {3})",
+                            rng.objectName, number, 0, range));
+                        rng.objectName = "invalid";
+                        continue;
+                    }
+                    if (useT)
+                        projectileSpawner.m_transformTargetPositions = new Transform[1] { projectileSpawner.m_transformTargetPositions[number] };
+                    else
+                        projectileSpawner.m_targetPositions = new Vector3[1] { projectileSpawner.m_targetPositions[number] };
+                }
+                else
+                {
+                    TASPlugin.Log(string.Format("RNG object \"{0}\" not found", rng.objectName));
+                    continue;
+                }
             }
 
             return true;

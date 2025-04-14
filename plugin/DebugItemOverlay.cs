@@ -80,6 +80,11 @@ namespace OC2TAS
                 List<float> timers = controller.get_m_plateReturnController().get_m_timers(c);
                 return string.Join(" ", timers.Select(x => x.ToString("F2")).ToArray());
             });
+            AddProviderFor<ServerWashingStation>("progress", DebugType.Progress, c =>
+            {
+                return string.Format("{0:F2}", c.get_m_cleaningTimer());
+
+            });
             AddProviderFor<ServerHeatedStation>("heat", DebugType.Progress, c =>
             {
                 return c.isActiveAndEnabled ? string.Format("{0:F3}", c.get_m_heatValue()) : null;

@@ -6,6 +6,7 @@ using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
 using OC2TAS.Extension;
+using System.Xml.Linq;
 
 namespace OC2TAS
 {
@@ -182,7 +183,7 @@ namespace OC2TAS
         }
     }
 
-    public static class MenuPatch
+    public static class RNGPatch
     {
         public class FixedMenuRoundData : RoundData
         {

@@ -25,6 +25,16 @@ namespace OC2TAS.Extension
         }
     }
 
+    public static class ServerWashingStationExtension
+    {
+        private static readonly FieldInfo fieldInfo_m_cleaningTimer = AccessTools.Field(typeof(ServerWashingStation), "m_cleaningTimer");
+
+        public static float get_m_cleaningTimer(this ServerWashingStation instance)
+        {
+            return (float)fieldInfo_m_cleaningTimer.GetValue(instance);
+        }
+    }
+
     public static class PlateReturnControllerExtension
     {
         private static readonly FieldInfo fieldInfo_m_platesToReturn = AccessTools.Field(typeof(PlateReturnController), "m_platesToReturn");
@@ -130,6 +140,32 @@ namespace OC2TAS.Extension
         public static void Update(this ClientEmoteWheel instance)
         {
             methodInfoUpdate.Invoke(instance, null);
+        }
+    }
+
+    public static class ServerTriggerAnimatorSetVariableExtension
+    {
+        private static readonly FieldInfo fieldInfo_m_data = AccessTools.Field(typeof(ServerTriggerAnimatorSetVariable), "m_data");
+        private static readonly FieldInfo fieldInfo_m_triggerAnimatorVariable = AccessTools.Field(typeof(ServerTriggerAnimatorSetVariable), "m_triggerAnimatorVariable");
+
+        public static TriggerAnimatorVariableMessage get_m_data(this ServerTriggerAnimatorSetVariable instance)
+        {
+            return (TriggerAnimatorVariableMessage)fieldInfo_m_data.GetValue(instance);
+        }
+
+        public static TriggerAnimatorSetVariable get_m_triggerAnimatorVariable(this ServerTriggerAnimatorSetVariable instance)
+        {
+            return (TriggerAnimatorSetVariable)fieldInfo_m_triggerAnimatorVariable.GetValue(instance);
+        }
+    }
+
+    public static class ServerProjectileSpawnerExtension
+    {
+        private static readonly FieldInfo fieldInfo_m_spawner = AccessTools.Field(typeof(ServerProjectileSpawner), "m_spawner");
+
+        public static ProjectileSpawner get_m_spawner(this ServerProjectileSpawner instance)
+        {
+            return (ProjectileSpawner)fieldInfo_m_spawner.GetValue(instance);
         }
     }
 }

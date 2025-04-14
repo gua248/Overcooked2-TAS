@@ -22,7 +22,7 @@ namespace OC2TAS
             patcher = new Harmony("dev.gua.overcooked.tas");
             patcher.PatchAll(typeof(ClientTime2TimePatch));
             patcher.PatchAll(typeof(UIPatch));
-            patcher.PatchAll(typeof(MenuPatch));
+            patcher.PatchAll(typeof(RNGPatch));
             foreach (var patched in Harmony.GetAllPatchedMethods())
                 Console.WriteLine("Patched: " + patched.FullDescription());
             SceneManager.sceneLoaded += OnSceneLoaded;
