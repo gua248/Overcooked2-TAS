@@ -17,7 +17,8 @@ class UIFunc(QMainWindow, Ui_UIView):
         'Pick': Key.space,
         'Dash': KeyCode.from_char('.'),
         'Use': KeyCode.from_char('/'),
-        'Emote': KeyCode.from_char('c')
+        'Emote': KeyCode.from_char('c'),
+        'Shift': Key.shift_r,
     }
     replay_file_path = 'D:\\Steam\\steamapps\\common\\Overcooked! 2\\BepInEx\\plugins\\replay.json'
     author = 'GUA'
@@ -54,7 +55,8 @@ class UIFunc(QMainWindow, Ui_UIView):
                 'Dash': self.pushButton_9,
                 'X': self.doubleSpinBox,
                 'Y': self.doubleSpinBox_5,
-                'Emote': self.pushButton_13
+                'Emote': self.pushButton_13,
+                'Shift': self.pushButton_17
             }, self),
             UIFunc.Gamepad({
                 'Pick': self.pushButton_2,
@@ -125,7 +127,7 @@ class UIFunc(QMainWindow, Ui_UIView):
 
     @Slot(Key)
     def key_press(self, key):
-        if key == KeyCode.from_char('0'):
+        if key == KeyCode.from_char('`'):
             self.ignore_key = not self.ignore_key
             if self.ignore_key:
                 self.label_5.setText('PAUSE')
@@ -290,6 +292,8 @@ class UIFunc(QMainWindow, Ui_UIView):
                 self.button_dict['Y'].setValue(self.button_dict['Y'].value() + 1.0)
             if key == KeyCode.from_char('s'):
                 self.button_dict['Y'].setValue(self.button_dict['Y'].value() - 1.0)
+            if key == UIFunc.keymap['Shift'] and 'Shift' in self.button_dict.keys():
+                self.button_dict['Shift'].click()
             self.update()
 
         def press_playing(self, key):
@@ -309,6 +313,8 @@ class UIFunc(QMainWindow, Ui_UIView):
                 self.wasd_state[0] = True
             if key == KeyCode.from_char('s'):
                 self.wasd_state[2] = True
+            if key == UIFunc.keymap['Shift'] and 'Shift' in self.button_dict.keys():
+                self.button_dict['Shift'].setChecked(True)
             self.button_dict['X'].setValue(self.wasd_state[1] * -1.0 + self.wasd_state[3] * 1.0)
             self.button_dict['Y'].setValue(self.wasd_state[2] * -1.0 + self.wasd_state[0] * 1.0)
             self.update()
@@ -330,20 +336,24 @@ class UIFunc(QMainWindow, Ui_UIView):
                 self.wasd_state[0] = False
             if key == KeyCode.from_char('s'):
                 self.wasd_state[2] = False
+            if key == UIFunc.keymap['Shift'] and 'Shift' in self.button_dict.keys():
+                self.button_dict['Shift'].setChecked(False)
             self.button_dict['X'].setValue(self.wasd_state[1] * -1.0 + self.wasd_state[3] * 1.0)
             self.button_dict['Y'].setValue(self.wasd_state[2] * -1.0 + self.wasd_state[0] * 1.0)
             self.update()
 
         def update(self):
-            for key, button in zip(['Pick', 'Use', 'Dash', 'Emote'],
+            for key, button in zip(['Pick', 'Use', 'Dash', 'Emote', 'Shift'],
                                    [vg.XUSB_BUTTON.XUSB_GAMEPAD_A,
                                     vg.XUSB_BUTTON.XUSB_GAMEPAD_X,
                                     vg.XUSB_BUTTON.XUSB_GAMEPAD_B,
-                                    vg.XUSB_BUTTON.XUSB_GAMEPAD_Y]):
-                if self.button_dict[key].isChecked():
-                    self.gamepad.press_button(button=button)
-                else:
-                    self.gamepad.release_button(button=button)
+                                    vg.XUSB_BUTTON.XUSB_GAMEPAD_Y,
+                                    vg.XUSB_BUTTON.XUSB_GAMEPAD_LEFT_SHOULDER]):
+                if key in self.button_dict.keys():
+                    if self.button_dict[key].isChecked():
+                        self.gamepad.press_button(button=button)
+                    else:
+                        self.gamepad.release_button(button=button)
             x = self.button_dict['X'].value()
             y = self.button_dict['Y'].value()
             self.gamepad.left_joystick_float(x, y)
@@ -355,7 +365,8 @@ class UIFunc(QMainWindow, Ui_UIView):
                     self.button_dict['Dash'].isChecked(),
                     self.button_dict['Emote'].isChecked(),
                     self.button_dict['X'].value(),
-                    self.button_dict['Y'].value()]
+                    self.button_dict['Y'].value(),
+                    'Shift' in self.button_dict.keys() and self.button_dict['Shift'].isChecked()]
 
         def set_state(self, state):
             self.button_dict['Pick'].setChecked(state[0])
@@ -367,6 +378,8 @@ class UIFunc(QMainWindow, Ui_UIView):
             self.button_dict['Emote'].setChecked(state[3])
             self.button_dict['X'].setValue(state[4])
             self.button_dict['Y'].setValue(state[5])
+            if 'Shift' in self.button_dict.keys():
+                self.button_dict['Shift'].setChecked(state[6] if len(state) > 6 else False)
             self.update()
 
     def on_change(self):

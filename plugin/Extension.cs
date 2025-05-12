@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
@@ -72,13 +73,31 @@ namespace OC2TAS.Extension
     public static class PlayerControlsExtension
     {
         private static readonly MethodInfo methodInfoPlayerControlsUpdate = AccessTools.Method(typeof(PlayerControls), "Update");
-        
+
         public static void Update(this PlayerControls instance)
         {
             methodInfoPlayerControlsUpdate.Invoke(instance, null);
         }
     }
-    
+
+    public static class PlayerSwitchingManagerExtension
+    {
+        private static readonly MethodInfo methodInfoPlayerSwitchingManagerUpdate = AccessTools.Method(typeof(PlayerSwitchingManager), "Update");
+        private static readonly FieldInfo fieldInfo_m_avatarSets = AccessTools.Field(typeof(PlayerSwitchingManager), "m_avatarSets");
+        private static readonly FieldInfo fieldInfo_SwitchButtons = AccessTools.Field(AccessTools.TypeByName("PlayerSwitchingManager+AvatarSet"), "SwitchButtons");
+
+        public static void Update(this PlayerSwitchingManager instance)
+        {
+            methodInfoPlayerSwitchingManagerUpdate.Invoke(instance, null);
+        }
+
+        public static ILogicalButton[] get_SwitchButton(this PlayerSwitchingManager instance)
+        {
+            var avatarSets = (IDictionary)fieldInfo_m_avatarSets.GetValue(instance);
+            return (ILogicalButton[])fieldInfo_SwitchButtons.GetValue(avatarSets[(PlayerInputLookup.Player)0]);
+        }
+    }
+
     public static class ClientWorkstationExtension
     {
         private static readonly FieldInfo fieldInfo_m_chopPFXInstance = AccessTools.Field(typeof(ClientWorkstation), "m_chopPFXInstance");

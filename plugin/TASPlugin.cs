@@ -1,6 +1,5 @@
 ﻿using BepInEx;
 using HarmonyLib;
-using System;
 using UnityEngine.SceneManagement;
 
 namespace OC2TAS
@@ -11,7 +10,7 @@ namespace OC2TAS
     {
         public const string PLUGIN_GUID = "dev.gua.overcooked.tas";
         public const string PLUGIN_NAME = "Overcooked2 TAS Plugin";
-        public const string PLUGIN_VERSION = "1.1";
+        public const string PLUGIN_VERSION = "1.2.0";
         public static TASPlugin pluginInstance;
         public static TASControl tasControl;
         private static Harmony patcher;
@@ -24,7 +23,7 @@ namespace OC2TAS
             patcher.PatchAll(typeof(UIPatch));
             patcher.PatchAll(typeof(RNGPatch));
             foreach (var patched in Harmony.GetAllPatchedMethods())
-                Console.WriteLine("Patched: " + patched.FullDescription());
+                Log("Patched: " + patched.FullDescription());
             SceneManager.sceneLoaded += OnSceneLoaded;
 
             tasControl = new TASControl();

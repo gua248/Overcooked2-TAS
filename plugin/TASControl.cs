@@ -12,10 +12,10 @@ namespace OC2TAS
 {
     public class TASControl
     {
-        KeyCode freezeToggleKey;
-        KeyCode nextFrameKey;
-        KeyCode replayKey;
-        KeyCode videoKey;
+        static KeyCode freezeToggleKey = KeyCode.F9;
+        static KeyCode replayKey = KeyCode.F10;
+        static KeyCode nextFrameKey = KeyCode.F11;
+        static KeyCode videoKey = KeyCode.F1;
         private bool frozen;
         public ReplayState replayState;
         public int replayFrameCount;
@@ -24,6 +24,7 @@ namespace OC2TAS
         private VideoRecorder videoRecorder;
         private AudioRecorder audioRecorder;
         private int bindUIEmoteAt;
+        private bool is1P;
         private float audioResumeTime;
 
         public TASScript script;
@@ -34,6 +35,7 @@ namespace OC2TAS
         TASControlScheme[] tasControlSchemes;
         ClientEmoteWheel[] emoteWheels;
         ClientEmoteWheel[] UIemoteWheels;
+        PlayerSwitchingManager playerSwitchingManager;
         ServerSessionInteractable[] serverSessionInteractables;
         MultiplayerController multiplayerController;
         Animator[] animators;
@@ -55,8 +57,9 @@ namespace OC2TAS
             public bool b_emote;
             public float x;
             public float y;
+            public bool b_shift;
             public GamepadState() { }
-            public GamepadState(bool pickup, bool interact, bool dash, bool emote, float x, float y)
+            public GamepadState(bool pickup, bool interact, bool dash, bool emote, float x, float y, bool b_shift)
             {
                 this.b_pickup = pickup;
                 this.b_interact = interact;
@@ -64,6 +67,7 @@ namespace OC2TAS
                 this.b_emote = emote;
                 this.x = x;
                 this.y = y;
+                this.b_shift = b_shift;
             }
         }
 
@@ -82,6 +86,7 @@ namespace OC2TAS
             public TASLogicalButton UIemoteOverRenableInputButton;
             public TASLogicalValue UIemoteXValue;
             public TASLogicalValue UIemoteYValue;
+            public TASLogicalButton shiftButton;
         }
 
         public class PositionCorrection
@@ -122,16 +127,16 @@ namespace OC2TAS
 
         public class TASLogicalButton : ILogicalButton
         {
-            private int playerID;
+            private PlayerControls playerControls;
             public ILogicalButton original;
             public bool down;
             public bool justPressed;
             public bool justReleased;
 
-            public TASLogicalButton(int playerID, ILogicalButton original)
+            public TASLogicalButton(PlayerControls playerControls, ILogicalButton original)
             {
-                this.playerID = playerID;
                 this.original = original;
+                this.playerControls = playerControls;
             }
 
             public void ClaimPressEvent() { }
@@ -143,21 +148,31 @@ namespace OC2TAS
             }
             public bool HasUnclaimedPressEvent() { return false; }
             public bool HasUnclaimedReleaseEvent() { return false; }
-            public bool IsDown() { return down; }
-            public bool JustPressed() { return justPressed; }
-            public bool JustReleased() { return justReleased; }
+
+            public bool IsDown() 
+            { 
+                return (playerControls == null || playerControls.CanButtonBePressed()) && down; 
+            }
+
+            public bool JustPressed()
+            {
+                return (playerControls == null || playerControls.CanButtonBePressed()) && justPressed;
+            }
+
+            public bool JustReleased()
+            {
+                return (playerControls == null || playerControls.CanButtonBePressed()) && justReleased;
+            }
         }
 
         public class TASLogicalValue : ILogicalValue
         {
-            private int playerID;
             private PlayerControls playerControls;
             public ILogicalValue original;
             public float value;
 
-            public TASLogicalValue(int playerID, PlayerControls playerControls, ILogicalValue original)
+            public TASLogicalValue(PlayerControls playerControls, ILogicalValue original)
             {
-                this.playerID = playerID;
                 this.original = original;
                 this.playerControls = playerControls;
             }
@@ -179,10 +194,6 @@ namespace OC2TAS
 
         public TASControl()
         {
-            freezeToggleKey = KeyCode.F9;
-            replayKey = KeyCode.F10;
-            nextFrameKey = KeyCode.F11;
-            videoKey = KeyCode.F1;
             playerControls = new PlayerControls[4];
             emoteWheels = new ClientEmoteWheel[4];
             UIemoteWheels = new ClientEmoteWheel[4];
@@ -270,11 +281,11 @@ namespace OC2TAS
                     GamepadState[] state = new GamepadState[4];
                     for (int i = 0; i < 4; i++)
                     {
-                        state[i] = script.gamepadStates[replayFrameCount / replayPeriod, i];
+                        state[i] = script.gamepadStates[replayFrameCount / replayPeriod, is1P ? 0 : i];
                         if (playerControls[i] != null)
                         {
                             tasControlSchemes[i].useButton.down = state[i].b_interact;
-                            tasControlSchemes[i].useButton.justPressed= state[i].b_interact && !last_state[i].b_interact;
+                            tasControlSchemes[i].useButton.justPressed = state[i].b_interact && !last_state[i].b_interact;
                             tasControlSchemes[i].useButton.justReleased = !state[i].b_interact && last_state[i].b_interact;
                             tasControlSchemes[i].pickupButton.justPressed = state[i].b_pickup && !last_state[i].b_pickup;
                             tasControlSchemes[i].dashButton.justPressed = state[i].b_dash && !last_state[i].b_dash;
@@ -285,6 +296,9 @@ namespace OC2TAS
                             tasControlSchemes[i].emoteOverRenableInputButton.down = state[i].b_pickup || state[i].b_interact || state[i].b_dash;
                             tasControlSchemes[i].emoteXValue.value = state[i].x;
                             tasControlSchemes[i].emoteYValue.value = -state[i].y;
+                            tasControlSchemes[i].shiftButton.justPressed = state[i].b_shift && !last_state[i].b_shift;
+                            if (tasControlSchemes[i].shiftButton.justPressed && tasControlSchemes[i].useButton.down)
+                                tasControlSchemes[i].useButton.justReleased = true;
                         }
                         if (UIemoteWheels[i] != null)
                         {
@@ -311,6 +325,9 @@ namespace OC2TAS
                     foreach (var serverSessionInteractable in serverSessionInteractables)
                         if (serverSessionInteractable.enabled)
                             serverSessionInteractable.UpdateSynchronising();
+                    
+                    playerSwitchingManager.Update();
+
                     for (int i = 0; i < 4; i++)
                     {
                         if (playerControls[i] != null)
@@ -319,6 +336,7 @@ namespace OC2TAS
                             tasControlSchemes[i].useButton.justReleased = false;
                             tasControlSchemes[i].pickupButton.justPressed = false;
                             tasControlSchemes[i].emoteButton.justPressed = false;
+                            tasControlSchemes[i].shiftButton.justPressed = false;
                         }
                         if (UIemoteWheels[i] != null)
                             tasControlSchemes[i].UIemoteButton.justPressed = false;
@@ -504,15 +522,21 @@ namespace OC2TAS
                     string[] s4 = Regex.Split(s3[i], "],\\[");
                     for (int j = 0; j < 4; ++j)
                     {
-                        string[] s5 = s4[j].Split(',');
-                        gamepadStates[i, j] = new GamepadState(
-                            bool.Parse(s5[0]),
-                            bool.Parse(s5[1]),
-                            bool.Parse(s5[2]),
-                            bool.Parse(s5[3]),
-                            float.Parse(s5[4]),
-                            float.Parse(s5[5])
-                        );
+                        if (j < s4.Length)
+                        {
+                            string[] s5 = s4[j].Split(',');
+                            gamepadStates[i, j] = new GamepadState(
+                                bool.Parse(s5[0]),
+                                bool.Parse(s5[1]),
+                                bool.Parse(s5[2]),
+                                bool.Parse(s5[3]),
+                                float.Parse(s5[4]),
+                                float.Parse(s5[5]),
+                                s5.Length > 6 && bool.Parse(s5[6])
+                            );
+                        }
+                        else
+                            gamepadStates[i, j] = new GamepadState();
                     }
                 }
                 if (flagNull >= 0)
@@ -653,17 +677,17 @@ namespace OC2TAS
                 TASPlugin.Log(string.Format("Level mismatch: \"{0}\"", kitchenLevelConfigBase.name));
                 return false;
             }
+            is1P = kitchenLevelConfigBase.name.EndsWith("_1P") || kitchenLevelConfigBase.name.EndsWith("_P1");
 
             GameObject[] players = new GameObject[4];
             for (int i = 0; i < PlayerIDProvider.s_AllProviders.Count; i++)
-                players[(int)PlayerIDProvider.s_AllProviders._items[i].GetID()] = PlayerIDProvider.s_AllProviders._items[i].gameObject;
+                players[i] = PlayerIDProvider.s_AllProviders.Find(x => x.name == $"Player {i+1}")?.gameObject;
             for (int i = 0; i < 4; i++)
             {
                 GameObject player = players[i];
                 if (player != null)
                 {
                     playerControls[i] = player.GetComponent<PlayerControls>();
-                    playerControls[i].m_pickupDelay = 0.499f;
                     emoteWheels[i] = player.GetComponent<ClientEmoteWheel>();
                 }
                 else
@@ -684,30 +708,49 @@ namespace OC2TAS
                 return false;
             }
 
+            // float point issue, 0.5f - 0.02f * 25 > 0f
+            for (int i = 0; i < 4; i++)
+                if (playerControls[i] != null)
+                    playerControls[i].m_pickupDelay = 0.499f;
+            //foreach (var spawn in GameObject.FindObjectsOfType<TriggerAttachedSpawn>())
+            //{
+            //    if (script.level.StartsWith("Sushi_4_1") && spawn.name.Equals("AttachingFoodSpawner (1)"))
+            //    {
+            //        var timer = spawn.GetComponent<TriggerTimer>();
+            //        if (timer != null)
+            //            timer.m_time -= 0.001f;
+            //    }
+            //}
+
             tasControlSchemes = new TASControlScheme[4].Select(x => new TASControlScheme()).ToArray();
             for (int i = 0; i < 4; i++)
                 if (playerControls[i] != null)
                 {
                     PlayerControls.ControlSchemeData controlScheme = playerControls[i].ControlScheme;
-                    tasControlSchemes[i].useButton = new TASLogicalButton(i, controlScheme.m_worksurfaceUseButton);
-                    tasControlSchemes[i].pickupButton = new TASLogicalButton(i, controlScheme.m_pickupButton);
-                    tasControlSchemes[i].dashButton = new TASLogicalButton(i, controlScheme.m_dashButton);
-                    tasControlSchemes[i].xValue = new TASLogicalValue(i, playerControls[i], controlScheme.m_moveX);
-                    tasControlSchemes[i].yValue = new TASLogicalValue(i, playerControls[i], controlScheme.m_moveY);
+                    tasControlSchemes[i].useButton = new TASLogicalButton(playerControls[i], controlScheme.m_worksurfaceUseButton);
+                    tasControlSchemes[i].pickupButton = new TASLogicalButton(playerControls[i], controlScheme.m_pickupButton);
+                    tasControlSchemes[i].dashButton = new TASLogicalButton(playerControls[i], controlScheme.m_dashButton);
+                    tasControlSchemes[i].xValue = new TASLogicalValue(playerControls[i], controlScheme.m_moveX);
+                    tasControlSchemes[i].yValue = new TASLogicalValue(playerControls[i], controlScheme.m_moveY);
                     controlScheme.m_worksurfaceUseButton = tasControlSchemes[i].useButton;
                     controlScheme.m_pickupButton = tasControlSchemes[i].pickupButton;
                     controlScheme.m_dashButton = tasControlSchemes[i].dashButton;
                     controlScheme.m_moveX = tasControlSchemes[i].xValue;
                     controlScheme.m_moveY = tasControlSchemes[i].yValue;
-                    tasControlSchemes[i].emoteButton = new TASLogicalButton(i, emoteWheels[i].get_m_wheelButton());
+                    tasControlSchemes[i].emoteButton = new TASLogicalButton(null, emoteWheels[i].get_m_wheelButton());
                     emoteWheels[i].set_m_wheelButton(tasControlSchemes[i].emoteButton);
-                    tasControlSchemes[i].emoteOverRenableInputButton = new TASLogicalButton(i, emoteWheels[i].get_m_renableInputButton());
+                    tasControlSchemes[i].emoteOverRenableInputButton = new TASLogicalButton(null, emoteWheels[i].get_m_renableInputButton());
                     emoteWheels[i].set_m_renableInputButton(tasControlSchemes[i].emoteOverRenableInputButton);
-                    tasControlSchemes[i].emoteXValue = new TASLogicalValue(i, null, emoteWheels[i].get_m_xMovement());
+                    tasControlSchemes[i].emoteXValue = new TASLogicalValue(null, emoteWheels[i].get_m_xMovement());
                     emoteWheels[i].set_m_xMovement(tasControlSchemes[i].emoteXValue);
-                    tasControlSchemes[i].emoteYValue = new TASLogicalValue(i, null, emoteWheels[i].get_m_yMovement());
+                    tasControlSchemes[i].emoteYValue = new TASLogicalValue(null, emoteWheels[i].get_m_yMovement());
                     emoteWheels[i].set_m_yMovement(tasControlSchemes[i].emoteYValue);
+                    tasControlSchemes[i].shiftButton = new TASLogicalButton(null, null);
                 }
+
+            playerSwitchingManager = GameUtils.RequireManager<PlayerSwitchingManager>();
+            tasControlSchemes[0].shiftButton.original = playerSwitchingManager.get_SwitchButton()[1];
+            playerSwitchingManager.get_SwitchButton()[1] = tasControlSchemes[0].shiftButton;
 
             UIemoteWheels = new ClientEmoteWheel[4];
 
@@ -828,13 +871,13 @@ namespace OC2TAS
             for (int i = 0; i < 4; i++)
                 if (UIemoteWheels[i] != null)
                 {
-                    tasControlSchemes[i].UIemoteButton = new TASLogicalButton(i, UIemoteWheels[i].get_m_wheelButton());
+                    tasControlSchemes[i].UIemoteButton = new TASLogicalButton(null, UIemoteWheels[i].get_m_wheelButton());
                     UIemoteWheels[i].set_m_wheelButton(tasControlSchemes[i].UIemoteButton);
-                    tasControlSchemes[i].UIemoteOverRenableInputButton = new TASLogicalButton(i, UIemoteWheels[i].get_m_renableInputButton());
+                    tasControlSchemes[i].UIemoteOverRenableInputButton = new TASLogicalButton(null, UIemoteWheels[i].get_m_renableInputButton());
                     UIemoteWheels[i].set_m_renableInputButton(tasControlSchemes[i].UIemoteOverRenableInputButton);
-                    tasControlSchemes[i].UIemoteXValue = new TASLogicalValue(i, null, UIemoteWheels[i].get_m_xMovement());
+                    tasControlSchemes[i].UIemoteXValue = new TASLogicalValue(null, UIemoteWheels[i].get_m_xMovement());
                     UIemoteWheels[i].set_m_xMovement(tasControlSchemes[i].UIemoteXValue);
-                    tasControlSchemes[i].UIemoteYValue = new TASLogicalValue(i, null, UIemoteWheels[i].get_m_yMovement());
+                    tasControlSchemes[i].UIemoteYValue = new TASLogicalValue(null, UIemoteWheels[i].get_m_yMovement());
                     UIemoteWheels[i].set_m_yMovement(tasControlSchemes[i].UIemoteYValue);
                 }
         }
@@ -876,6 +919,9 @@ namespace OC2TAS
                     UIemoteWheels[i].set_m_yMovement(tasControlSchemes[i].UIemoteYValue.original);
                 }
             }
+            playerSwitchingManager.get_SwitchButton()[1] = tasControlSchemes[0].shiftButton.original;
+            playerSwitchingManager.get_SwitchButton()[1].JustPressed();
+
             Time.timeScale = 0f;
             AudioListener.pause = false;
             replayPeriod = 2;

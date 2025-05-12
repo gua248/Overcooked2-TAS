@@ -1,6 +1,6 @@
 controller/.idea/
 controller/__pycache__/
-controller/records/record_*.json
+controller/records/*.json
 .ipynb_checkpoints/
 .idea/
 *.ipynb

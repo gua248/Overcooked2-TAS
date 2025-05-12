@@ -6,7 +6,6 @@ using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
 using OC2TAS.Extension;
-using System.Xml.Linq;
 
 namespace OC2TAS
 {
