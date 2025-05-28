@@ -40,17 +40,25 @@ namespace OC2TAS
         }
 
         static FieldInfo fieldInfo_m_LeftOverTime = AccessTools.Field(typeof(ClientPlayerControlsImpl_Default), "m_LeftOverTime");
+        static FieldInfo fieldInfo_m_lastPickupTimestamp = AccessTools.Field(typeof(ClientPlayerControlsImpl_Default), "m_lastPickupTimestamp");
+        static FieldInfo fieldInfo_m_dashTimer= AccessTools.Field(typeof(ClientPlayerControlsImpl_Default), "m_dashTimer");
 
         public static void Awake()
         {
             //AddProviderFor<ClientPlayerControlsImpl_Default>("time", DebugType.Player, c =>
             //{
             //    return string.Format("{0:F4}", (float)fieldInfo_m_LeftOverTime.GetValue(c));
-            //});
+            //});m_dashTimer
             AddProviderFor<PlayerControls>("pos", DebugType.Player, c =>
             {
                 Vector3 position = c.transform.position;
                 return string.Format("\n{0:F4}\n{1:F4}\n{2:F4}", position.x, position.y, position.z);
+            });
+            AddProviderFor<ClientPlayerControlsImpl_Default>("cd", DebugType.Player, c =>
+            {
+                float t_pickup = (float)fieldInfo_m_lastPickupTimestamp.GetValue(c) - Time.time;
+                float t_dash = (float)fieldInfo_m_dashTimer.GetValue(c) + 0.1f - 0.02f;
+                return string.Format("p{0:.00},d{1:.00}", Mathf.Max(t_pickup, 0f), Mathf.Max(t_dash, 0f));
             });
             AddProviderFor<PlayerControls>("name", DebugType.Player, c =>
             {

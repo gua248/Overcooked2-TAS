@@ -10,7 +10,7 @@ namespace OC2TAS
     {
         public const string PLUGIN_GUID = "dev.gua.overcooked.tas";
         public const string PLUGIN_NAME = "Overcooked2 TAS Plugin";
-        public const string PLUGIN_VERSION = "1.2.0";
+        public const string PLUGIN_VERSION = "1.2.1";
         public static TASPlugin pluginInstance;
         public static TASControl tasControl;
         private static Harmony patcher;
