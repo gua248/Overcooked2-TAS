@@ -376,7 +376,11 @@ namespace OC2TAS
                     foreach (PositionCorrection pc in script.positionCorrections)
                         if (replayFrameCount == pc.frame * replayPeriod)
                         {
-                            GameObject gameObject = GameObject.Find(pc.objectName);
+                            GameObject gameObject = pc.objectName.StartsWith("Player") ? GameObject.Find(pc.objectName) : 
+                                GameObject.FindObjectsOfType<ObjectContainer>()
+                                .FindAll(x => x.name == pc.objectName)
+                                .FindLowestScoring(x => Vector3.Distance(x.transform.position, pc.position))
+                                .Value?.gameObject;
                             if (gameObject != null)
                             {
                                 Vector3 position = gameObject.transform.position;
