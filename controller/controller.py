@@ -86,6 +86,7 @@ class UIFunc(QMainWindow, Ui_UIView):
         self.active_gamepad = self.gamepad_list[0]
         self.label_12.setStyleSheet('background-color: gray')
         self.record = []
+        self.num_player = 4
         self.cached_record = []
         self.cached_flag = [False] * 4
         self.first_frame_cached = False
@@ -198,6 +199,7 @@ class UIFunc(QMainWindow, Ui_UIView):
                     self.position_correction.sort(key=lambda x: x[1])
                     self.rng_assigner = record['rng'] if 'rng' in record.keys() else []
                     record = record['state']
+                    self.num_player = len(record[0]) if len(record) > 0 else 4
                     for i, rf in enumerate(record):
                         flag = [True] * 4
                         for j, rg in enumerate(rf):
@@ -221,13 +223,13 @@ class UIFunc(QMainWindow, Ui_UIView):
                     if len(self.record) > 0:
                         for j, rg in enumerate(self.record[-1]):
                             self.gamepad_list[j].set_state(rg)
-                    for i, gamepad in enumerate(self.gamepad_list):
-                        dash_frame = [j for j, rf in enumerate(self.record) if rf[i][2] is True]
+                    for j in range(self.num_player):
+                        dash_frame = [i for i, rf in enumerate(self.record) if rf[j][2] is True]
                         k = len(dash_frame)
                         while k > 1 and dash_frame[k-2] == dash_frame[k-1] - 1:
                             k -= 1
                         last_dash_frame = dash_frame[k-1] if k > 0 else 0
-                        gamepad.button_dict['Dash'].setText("{:05d}".format(last_dash_frame))
+                        self.gamepad_list[j].button_dict['Dash'].setText("{:05d}".format(last_dash_frame))
                     label_list = [self.label_18, self.label_19, self.label_20, self.label_21]
                     for j in range(4):
                         if self.cached_flag[j]:
@@ -238,7 +240,7 @@ class UIFunc(QMainWindow, Ui_UIView):
 
         elif key == Key.f11 and self.state == 'input_recording':
             if not self.first_frame_cached:
-                state = [gamepad.get_state() for gamepad in self.gamepad_list]
+                state = [self.gamepad_list[j].get_state() for j in range(self.num_player)]
                 self.record.append(state)
             self.label_5.clear()
             self.label_17.setText("FRAME {:05d} ".format(len(self.record)))
@@ -256,13 +258,6 @@ class UIFunc(QMainWindow, Ui_UIView):
                 if not self.cached_record:
                     for label in label_list:
                         label.setStyleSheet('background-color: lightgray')
-
-    @Slot(list)
-    def replay_frame(self, rf):
-        for j, rg in enumerate(rf):
-            self.gamepad_list[j].set_state(rg)
-        self.record.append(rf)
-        self.label_17.setText("FRAME {:05d} ".format(len(self.record)))
 
     class Gamepad:
         def __init__(self, button_dict, parent):
@@ -390,8 +385,8 @@ class UIFunc(QMainWindow, Ui_UIView):
         save_record = []
         save_record += self.record
         if self.cached_record and not self.first_frame_cached:
-            state = [gamepad.get_state() for gamepad in self.gamepad_list]
-            for j in range(4):
+            state = [self.gamepad_list[j].get_state() for j in range(self.num_player)]
+            for j in range(self.num_player):
                 if not self.cached_flag[j]:
                     state[j][0] = None
             save_record.append(state)
@@ -435,11 +430,16 @@ class UIFunc(QMainWindow, Ui_UIView):
             f.write('  \"state\": \n')
             f.write('  [\n')
             for rf in save_record:
-                f.write('    [\n')
-                for rg in rf:
-                    f.write('      '+str(rg).lower().replace("none", "null"))
-                    f.write('\n' if rg is rf[-1] else ',\n')
-                f.write('    ]\n' if rf is save_record[-1] else '    ],\n')
+                if self.num_player > 1:
+                    f.write('    [\n')
+                    for rg in rf:
+                        f.write('      '+str(rg).lower().replace("none", "null"))
+                        f.write('\n' if rg is rf[-1] else ',\n')
+                    f.write('    ]\n' if rf is save_record[-1] else '    ],\n')
+                else:
+                    f.write('    [')
+                    f.write(str(rf[0]).lower().replace("none", "null"))
+                    f.write(']\n' if rf is save_record[-1] else '],\n')
             f.write('  ]\n')
             f.write('}\n')
 

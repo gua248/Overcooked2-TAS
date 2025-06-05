@@ -24,7 +24,6 @@ namespace OC2TAS
         private VideoRecorder videoRecorder;
         private AudioRecorder audioRecorder;
         private int bindUIEmoteAt;
-        private bool is1P;
         private float audioResumeTime;
 
         public TASScript script;
@@ -281,7 +280,7 @@ namespace OC2TAS
                     GamepadState[] state = new GamepadState[4];
                     for (int i = 0; i < 4; i++)
                     {
-                        state[i] = script.gamepadStates[replayFrameCount / replayPeriod, is1P ? 0 : i];
+                        state[i] = script.gamepadStates[replayFrameCount / replayPeriod, ServerUserSystem.m_Users.Count == 1 ? 0 : i];
                         if (playerControls[i] != null)
                         {
                             tasControlSchemes[i].useButton.down = state[i].b_interact;
@@ -470,9 +469,7 @@ namespace OC2TAS
                 "  \"position_correction\": [],\n" +
                 "  \"state\": \n  [\n" +
                 "    [\n" +
-                "      [null, false, false, false, 0.0, 0.0],\n" +
-                "      [null, false, false, false, 0.0, 0.0],\n" +
-                "      [null, false, false, false, 0.0, 0.0],\n" +
+                string.Concat(Enumerable.Repeat("      [null, false, false, false, 0.0, 0.0],\n", ServerUserSystem.m_Users.Count - 1).ToArray()) +
                 "      [null, false, false, false, 0.0, 0.0]\n" +
                 "    ]\n  ]\n}}", kitchenLevelConfigBase.name);
             File.WriteAllText(path, content);
@@ -681,7 +678,6 @@ namespace OC2TAS
                 TASPlugin.Log(string.Format("Level mismatch: \"{0}\"", kitchenLevelConfigBase.name));
                 return false;
             }
-            is1P = kitchenLevelConfigBase.name.EndsWith("_1P") || kitchenLevelConfigBase.name.EndsWith("_P1");
 
             GameObject[] players = new GameObject[4];
             for (int i = 0; i < PlayerIDProvider.s_AllProviders.Count; i++)
