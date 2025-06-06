@@ -561,7 +561,7 @@ namespace OC2TAS
                     {
                         string[] s7 = s6[i].Split(',');
                         script.rngAssigners[i] = new RNGAssigner(
-                            Regex.Match(s7[0], @"""(.*)""").Groups[1].Value, s7[1]
+                            Regex.Match(s7[0], @"""(.*)""").Groups[1].Value, s7[1].Trim().Replace("\"", "")
                         );
                     }
                 }
@@ -782,6 +782,7 @@ namespace OC2TAS
                 var obj = GameObject.Find(rng.objectName);
                 var serverSetVariable = obj?.GetComponent<ServerTriggerAnimatorSetVariable>();
                 var serverProjectileSpawner = obj?.GetComponent<ServerProjectileSpawner>();
+                var serverTriggerAttachedSpawn = obj?.GetComponent<ServerTriggerAttachedSpawn>();
 
                 if (serverSetVariable != null)
                 {
@@ -837,13 +838,31 @@ namespace OC2TAS
                         TASPlugin.Log(string.Format(
                             "RNG object \"{0}\" value {1} out of range [{2}, {3})",
                             rng.objectName, number, 0, range));
-                        rng.objectName = "invalid";
                         continue;
                     }
                     if (useT)
                         projectileSpawner.m_transformTargetPositions = new Transform[1] { projectileSpawner.m_transformTargetPositions[number] };
                     else
                         projectileSpawner.m_targetPositions = new Vector3[1] { projectileSpawner.m_targetPositions[number] };
+                }
+                else if (serverTriggerAttachedSpawn != null)
+                {
+                    var triggerAttachedSpawn = serverTriggerAttachedSpawn.get_m_triggerAttachedSpawn();
+                    if (triggerAttachedSpawn.m_spawnInOrder)
+                    {
+                        TASPlugin.Log(string.Format("RNG object \"{0}\" is not random", rng.objectName));
+                        continue;
+                    }
+                    char[] outranged = rng.number.ToCharArray().FindAll(x => x < '0' || x >= triggerAttachedSpawn.m_attachmentPrefabs.Length + '0');
+                    if (outranged.Length > 0) 
+                    {
+                        TASPlugin.Log(string.Format(
+                            "RNG object \"{0}\" value {1} out of range [{2}, {3})",
+                            rng.objectName, outranged[0], 0, triggerAttachedSpawn.m_attachmentPrefabs.Length));
+                        continue;
+                    }
+                    triggerAttachedSpawn.m_spawnInOrder = true;
+                    triggerAttachedSpawn.m_attachmentPrefabs = rng.number.Select(x => triggerAttachedSpawn.m_attachmentPrefabs[x - '0']).ToArray();
                 }
                 else
                 {

@@ -404,7 +404,7 @@ class UIFunc(QMainWindow, Ui_UIView):
                 f.write('  \"rng\": \n')
                 f.write('  [\n')
                 for rng in self.rng_assigner:
-                    f.write('    [\"{}\", {}]'.format(*rng))
+                    f.write('    ' + json.dumps(rng))
                     f.write('\n' if rng is self.rng_assigner[-1] else ',\n')
                 f.write('  ],\n')
 

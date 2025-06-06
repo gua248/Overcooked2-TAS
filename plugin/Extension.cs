@@ -187,4 +187,14 @@ namespace OC2TAS.Extension
             return (ProjectileSpawner)fieldInfo_m_spawner.GetValue(instance);
         }
     }
+
+    public static class ServerTriggerAttachedSpawnExtension
+    {
+        private static readonly FieldInfo fieldInfo_m_triggerAttachedSpawn = AccessTools.Field(typeof(ServerTriggerAttachedSpawn), "m_triggerAttachedSpawn");
+        
+        public static TriggerAttachedSpawn get_m_triggerAttachedSpawn(this ServerTriggerAttachedSpawn instance)
+        {
+            return (TriggerAttachedSpawn)fieldInfo_m_triggerAttachedSpawn.GetValue(instance);
+        }
+    }
 }
