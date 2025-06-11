@@ -708,19 +708,22 @@ namespace OC2TAS
                 return false;
             }
 
-            // float point issue, 0.5f - 0.02f * 25 > 0f
+            // floating point issue, e.g. 0.5f - 0.02f * 25 > 0f
             for (int i = 0; i < 4; i++)
                 if (playerControls[i] != null)
                     playerControls[i].m_pickupDelay = 0.499f;
-            //foreach (var spawn in GameObject.FindObjectsOfType<TriggerAttachedSpawn>())
-            //{
-            //    if (script.level.StartsWith("Sushi_4_1") && spawn.name.Equals("AttachingFoodSpawner (1)"))
-            //    {
-            //        var timer = spawn.GetComponent<TriggerTimer>();
-            //        if (timer != null)
-            //            timer.m_time -= 0.001f;
-            //    }
-            //}
+            foreach (var go in GameObject.FindObjectsOfType<TriggerTimer>())
+                foreach (TriggerTimer triggerTimer in go.GetComponents<TriggerTimer>())
+                    if (triggerTimer.m_time <= 10f)
+                        triggerTimer.m_time -= 0.001f;
+            foreach (var go in GameObject.FindObjectsOfType<TimedQueue>())
+                foreach (TimedQueue timedQueue in go.GetComponents<TimedQueue>())
+                {
+                    if (timedQueue.m_loopDelay > 0f && timedQueue.m_loopDelay <= 10f)
+                        timedQueue.m_loopDelay -= 0.001f;
+                    if (timedQueue is TriggerQueue triggerQueue)
+                        triggerQueue.m_queue.m_delays = triggerQueue.m_queue.m_delays.Select(x => x > 0 && x <= 10f ? x - 0.001f : x).ToArray();
+                }
 
             tasControlSchemes = new TASControlScheme[4].Select(x => new TASControlScheme()).ToArray();
             for (int i = 0; i < 4; i++)
