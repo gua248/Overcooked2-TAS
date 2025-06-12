@@ -724,6 +724,8 @@ namespace OC2TAS
                     if (timedQueue is TriggerQueue triggerQueue)
                         triggerQueue.m_queue.m_delays = triggerQueue.m_queue.m_delays.Select(x => x > 0 && x <= 10f ? x - 0.001f : x).ToArray();
                 }
+            foreach (WashingStation washingStation in GameObject.FindObjectsOfType<WashingStation>())
+                washingStation.m_cleanPlateTime -= 0.001f;
 
             tasControlSchemes = new TASControlScheme[4].Select(x => new TASControlScheme()).ToArray();
             for (int i = 0; i < 4; i++)
